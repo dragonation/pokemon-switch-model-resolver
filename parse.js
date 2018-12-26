@@ -499,40 +499,73 @@ parsers[".gfmdl"] = function (reader, type) {
             "layoutSize": boneInfoLayoutReader.readUInt16(),
             "nameOffset": boneInfoLayoutReader.readUInt16(),
             "flagOffset": boneInfoLayoutReader.readUInt16(),
-            "flag2Offset": boneInfoLayoutReader.readUInt16(), 
+            "flag2Offset": boneInfoLayoutReader.readUInt16(),
             "parentOffset": boneInfoLayoutReader.readUInt16(),
             "blankData": boneInfoLayoutReader.readUInt16(), // always zero ?
             "bitOffset": boneInfoLayoutReader.readUInt16(),
             "scaleOffset": boneInfoLayoutReader.readUInt16(),
             "rotationOffset": boneInfoLayoutReader.readUInt16(),
             "translationOffset": boneInfoLayoutReader.readUInt16(),
-            "unknownOffset": boneInfoLayoutReader.readUInt16(),
-            "unknown2Offset": boneInfoLayoutReader.readUInt16(),
+            "radiusOffsets": [boneInfoLayoutReader.readUInt16(), boneInfoLayoutReader.readUInt16()]
         };
+
+        if (layout.blankData !== 0) {
+            throw new Error("Blank data not zero");
+        }
 
         var bone = {
             "name": boneReader.snapshot(boneOffset + layout.nameOffset).readString(),
-            "flag": 0,
-            "flag2": 0
+            "animatable": false,
+            "bitFlag": 0
         };
         if (layout.flagOffset) {
-            bone.flag = boneReader.snapshot(boneOffset + layout.flagOffset).readUInt32(); // always 4 ?
-        }
-        if (layout.flag2Offset) {
-            bone.flag2 = boneReader.snapshot(boneOffset + layout.flag2Offset).readUInt32(); // 0 or 1, enabled ?
-        }
-        if (layout.bitOffset) {
-            // bone.bitFlag = boneReader.snapshot(Math.floor((boneOffset + layout.bitOffset) / 4) * 4).readUInt32();
-            // bone.bitFlag = bone.bitFlag >> boneOffset % 
-            // TODO: extract the bit data?
+            var flag = boneReader.snapshot(boneOffset + layout.flagOffset).readUInt32();
+            if (flag !== 4) {
+                // TODO: if not 4, we report error, and research it
+                throw new Error("Bone flag not 4");
+            }
         }
 
-        ["scale", "rotation", "translation", "unknown", "unknown2"].forEach((key) => {
+        if (layout.flag2Offset) {
+            var flag = boneReader.snapshot(boneOffset + layout.flag2Offset).readUInt32(); // 0 or 1, enabled ?
+            if ((flag !== 0) && (flag !== 1)) {
+                // TODO: if not 1 or 0, we report error, and research it
+                throw new Error("Bone flag 2 not 1 or 0");
+            }
+            bone.animatable = (flag === 1);
+        }
+
+        if (layout.bitOffset) {
+            var byte = boneReader.snapshot(Math.floor((boneOffset + layout.bitOffset) / 4) * 4).readUInt32();
+            var bitFlag = byte >> (((boneOffset + layout.bitOffset) % 4) * 8);
+            if ((bitFlag !== 1) && (bitFlag !== 0)) {
+                // TODO: if not 1 or 0, we report error, and research it
+                throw new Error("Bone bit flag not 1 or 0");
+            } else if (((bitFlag === 1) && (!bone.animatable)) ||
+                       ((bitFlag === 0) && (bone.animatable))) {
+                // TODO: if not synced with animatable, we report error, and research it
+                throw new Error("Bone bit flag not synced with animatable");
+            } else if ((bitFlag << (((boneOffset + layout.bitOffset) % 4) * 8)) !== byte) {
+                // TODO: not only the bit set, we report error, and research it
+                throw new Error("Bone bit flag i32 has more data");
+            }
+        }
+
+        ["scale", "rotation", "translation"].forEach((key) => {
             var reader = boneReader.snapshot(boneOffset + layout[key + "Offset"]);
             bone[key] = [reader.readFloat32(), reader.readFloat32(), reader.readFloat32()];
         });
-
-        // @dump(layout);
+        var radiusReader = boneReader.snapshot(boneOffset + layout.radiusOffsets[0]);
+        var radius2Reader = boneReader.snapshot(boneOffset + layout.radiusOffsets[1]);
+        bone.radius = [
+            [radiusReader.readFloat32(), radiusReader.readFloat32(), radiusReader.readFloat32()],
+            [radius2Reader.readFloat32(), radius2Reader.readFloat32(), radius2Reader.readFloat32()]
+        ];
+        if (bone.radius[0][0] || bone.radius[0][1] || bone.radius[0][2] ||
+            bone.radius[1][0] || bone.radius[1][1] || bone.radius[1][2]) {
+            // TODO: if not 0, we report error, and research it
+            throw new Error("Bone radius not 0");
+        }
 
         if (layout.parentOffset) {
             bone.parent = boneReader.snapshot(boneOffset + layout.parentOffset).readInt32(); // -1 means no parent
@@ -541,8 +574,6 @@ parsers[".gfmdl"] = function (reader, type) {
         }
 
         result.bones.push(bone);
-
-        @dump(bone);
 
         ++looper;
     }
@@ -567,7 +598,7 @@ parsers[".gfmdl"] = function (reader, type) {
         ++looper;
     }
 
-    @dump(result);
+    // @dump(result);
 
     return result;
 
