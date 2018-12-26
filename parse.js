@@ -469,7 +469,7 @@ parsers[".gfmdl"] = function (reader, type) {
             "unknownData": reader.offset + reader.readUInt32(),
             "unknownData2": reader.offset + reader.readUInt32(),
             "shaderNames": reader.offset + reader.readUInt32(),
-            "visGroups": reader.offset + reader.readUInt32(),
+            "meshes": reader.offset + reader.readUInt32(),
             "vertices": reader.offset + reader.readUInt32(),
             "bones": reader.offset + reader.readUInt32()
         },
@@ -480,11 +480,11 @@ parsers[".gfmdl"] = function (reader, type) {
         "unknownInfo": [ reader.readInt32(), reader.readInt32() ],
         "matrixNames": [],
         "textureNames": [],
-        "bones": []
+        "bones": [],
+        "meshes": [],
     };
 
     var bonesReader = reader.snapshot(result.offsets.bones);
-    dump(bonesReader, 800);
     var boneCount = bonesReader.readUInt32();
     var looper = 0;
     while (looper < boneCount) {
@@ -508,6 +508,10 @@ parsers[".gfmdl"] = function (reader, type) {
             "translationOffset": boneInfoLayoutReader.readUInt16(),
             "radiusOffsets": [boneInfoLayoutReader.readUInt16(), boneInfoLayoutReader.readUInt16()]
         };
+
+        if (layout.layoutSize !== 24) {
+            throw new Error("Layout size not 24");
+        }
 
         if (layout.blankData !== 0) {
             throw new Error("Blank data not zero");
@@ -577,6 +581,51 @@ parsers[".gfmdl"] = function (reader, type) {
 
         ++looper;
     }
+
+    var meshesReader = reader.snapshot(result.offsets.meshes);
+    var meshCount = meshesReader.readUInt32();
+    var looper = 0;
+    while (looper < meshCount) {
+
+        var meshOffset = meshesReader.offset + meshesReader.readUInt32();
+        var meshReader = meshesReader.snapshot(meshOffset);
+
+        var meshLayoutReader = meshesReader.snapshot(meshReader.offset - meshReader.readInt32());
+
+        var layout = {
+            "layoutSize": meshLayoutReader.readUInt16(),
+            "dataSize": meshLayoutReader.readUInt16(),
+            "bone": meshLayoutReader.readUInt16(),
+            "index": meshLayoutReader.readUInt16(),
+            "boundingBox": meshLayoutReader.readUInt16(),
+            "unknown": 0
+        };
+        if (layout.layoutSize > 10) {
+            layout.unknown = meshLayoutReader.readUInt16();
+            throw new Error("We got mesh unknown layout!");
+        }
+
+        var boundingBoxReader = meshReader.snapshot(meshOffset + layout.boundingBox);
+
+        var mesh = {
+            "boundingBox": {
+                "min": [boundingBoxReader.readFloat32(), boundingBoxReader.readFloat32(), boundingBoxReader.readFloat32()],
+                "max": [boundingBoxReader.readFloat32(), boundingBoxReader.readFloat32(), boundingBoxReader.readFloat32()],
+            },
+            "index": 0,
+            "bone": meshReader.snapshot(meshOffset + layout.bone).readUInt32()
+        };
+        mesh.name = result.bones[mesh.bone].name;
+        if (layout.index) {
+            mesh.index = meshReader.snapshot(meshOffset + layout.index).readUInt32();
+        }
+
+        result.meshes.push(mesh);
+
+        ++looper;
+    }
+
+    @dump(result.offsets);
 
     var matrixNameReader = reader.snapshot(result.offsets.matrixNames);
     var matrixNameCount = matrixNameReader.readUInt32();
