@@ -479,8 +479,73 @@ parsers[".gfmdl"] = function (reader, type) {
         },
         "unknownInfo": [ reader.readInt32(), reader.readInt32() ],
         "matrixNames": [],
-        "textureNames": []
+        "textureNames": [],
+        "bones": []
     };
+
+    var bonesReader = reader.snapshot(result.offsets.bones);
+    dump(bonesReader, 800);
+    var boneCount = bonesReader.readUInt32();
+    var looper = 0;
+    while (looper < boneCount) {
+
+        var boneOffset = bonesReader.offset + bonesReader.readUInt32();
+        var boneReader = bonesReader.snapshot(boneOffset);
+
+        var boneInfoLayoutOffset = boneReader.offset - boneReader.readInt32();
+        var boneInfoLayoutReader = boneReader.snapshot(boneInfoLayoutOffset);
+
+        let layout = {
+            "layoutSize": boneInfoLayoutReader.readUInt16(),
+            "nameOffset": boneInfoLayoutReader.readUInt16(),
+            "flagOffset": boneInfoLayoutReader.readUInt16(),
+            "flag2Offset": boneInfoLayoutReader.readUInt16(), 
+            "parentOffset": boneInfoLayoutReader.readUInt16(),
+            "blankData": boneInfoLayoutReader.readUInt16(), // always zero ?
+            "bitOffset": boneInfoLayoutReader.readUInt16(),
+            "scaleOffset": boneInfoLayoutReader.readUInt16(),
+            "rotationOffset": boneInfoLayoutReader.readUInt16(),
+            "translationOffset": boneInfoLayoutReader.readUInt16(),
+            "unknownOffset": boneInfoLayoutReader.readUInt16(),
+            "unknown2Offset": boneInfoLayoutReader.readUInt16(),
+        };
+
+        var bone = {
+            "name": boneReader.snapshot(boneOffset + layout.nameOffset).readString(),
+            "flag": 0,
+            "flag2": 0
+        };
+        if (layout.flagOffset) {
+            bone.flag = boneReader.snapshot(boneOffset + layout.flagOffset).readUInt32(); // always 4 ?
+        }
+        if (layout.flag2Offset) {
+            bone.flag2 = boneReader.snapshot(boneOffset + layout.flag2Offset).readUInt32(); // 0 or 1, enabled ?
+        }
+        if (layout.bitOffset) {
+            // bone.bitFlag = boneReader.snapshot(Math.floor((boneOffset + layout.bitOffset) / 4) * 4).readUInt32();
+            // bone.bitFlag = bone.bitFlag >> boneOffset % 
+            // TODO: extract the bit data?
+        }
+
+        ["scale", "rotation", "translation", "unknown", "unknown2"].forEach((key) => {
+            var reader = boneReader.snapshot(boneOffset + layout[key + "Offset"]);
+            bone[key] = [reader.readFloat32(), reader.readFloat32(), reader.readFloat32()];
+        });
+
+        // @dump(layout);
+
+        if (layout.parentOffset) {
+            bone.parent = boneReader.snapshot(boneOffset + layout.parentOffset).readInt32(); // -1 means no parent
+        } else {
+            bone.parent = 0; // if no parent, it seems zero means
+        }
+
+        result.bones.push(bone);
+
+        @dump(bone);
+
+        ++looper;
+    }
 
     var matrixNameReader = reader.snapshot(result.offsets.matrixNames);
     var matrixNameCount = matrixNameReader.readUInt32();
@@ -601,7 +666,7 @@ var dump = function (reader, count) {
 
     var content = lines.join("\n") + "\n";
 
-    @celebr(content);
+    @warn(content);
 
 };
 
