@@ -9,7 +9,7 @@ var parse = function (reader, type) {
         return parsers[type](reader, type);
     } else {
         @warn("Unknown type parser " + type);
-        dump(reader, 32);
+        reader.dump(32);
         return null;
     }
 
@@ -18,7 +18,7 @@ var parse = function (reader, type) {
 parsers[".gfpak"] = function (reader) {
 
     return gfpak(reader, parse);
-    
+
 };
 
 parsers[".bntx"] = function (reader, type) {
@@ -104,7 +104,12 @@ parsers[".gfmdl"] = function (reader, type) {
             ["radiusEnd", "[3:f32]"]
         ],
         "material": [
-            [null, "i32"],
+            // edgeType, edgeID, edgeEnabled, projectionType
+            // idEdgeOffset, edgeMapAlphaMask
+            // shaderType
+            // renderPriority
+            // renderLayer
+            ["shader", "i32"],
             ["name", "&str"],
             ["shaderGroup", "&str"],
             [null, "u8", 0],
@@ -144,9 +149,21 @@ parsers[".gfmdl"] = function (reader, type) {
         ],
         "texture": [
             ["channel", "str"],
-            ["hdr", "i32"],
+            ["channel2", "&str"], // the same as channel ??
             ["id", "i32"],
-            [null, "i32"]
+            ["mapping", "&texture_mapping"]
+        ],
+        "texture_mapping": [
+            // mappingType, scale, translation, rotation,
+            // wrapS, wrapT, magFilter, minFilter
+            // minLOD
+            [null, "hex"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "hex"],
         ],
         "mesh": [
             [null, "hex"],
@@ -223,8 +240,52 @@ parsers[".gfmdl"] = function (reader, type) {
                 });
                 object.colors = colors;
 
+                object.shader = gfbin(reader.snapshot(object.@offset + object.@layouts.shader), "shader", {
+                    "shader": [
+                        ["name", "str"],
+                        ["switches", "&[&shader_switch]"],
+                        ["values", "&[&shader_value]"],
+                        // colors
+                    ],
+                    "shader_switch": [
+                        ["name", "str"],
+                        ["format", "u32", 4],
+                        ["value", "u8"]
+                    ],
+                    "shader_value": [
+                        ["name", "str"],
+                        ["format", "u32", 4],
+                        ["value", "i32"]
+                    ]
+                }, (object) => {
+
+                    if (object.@type === "shader") {
+
+                        var switches = {};
+                        object.switches.forEach((value) => {
+                            switches[value.name] = value.value ? true : false;
+                        });
+                        object.switches = switches;
+
+                        var values = {};
+                        object.values.forEach((value) => {
+                            values[value.name] = value.value;
+                        });
+                        object.values = values;
+
+                    }
+
+                });
+
+                @dump(object);
+
                 break;
             };
+
+            // case "texture": {
+            //     @dump(object);
+            //     break;
+            // };
 
             case "submesh_format": {
 
@@ -272,7 +333,7 @@ parsers[".gfmdl"] = function (reader, type) {
 
     });
 
-    @dump(result);
+    // @dump(result);
 
     return result;
 

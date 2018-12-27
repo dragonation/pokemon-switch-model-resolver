@@ -1,3 +1,11 @@
+var hex = function (u32) {
+
+    var result = ("0000000" + u32.toString(16)).slice(-8);
+
+    return result.slice(6, 8) + result.slice(4, 6) + result.slice(2, 4) + result.slice(0, 2);
+
+};
+
 var parse = function (reader, name, types, listener) {
 
     if (!name) {
@@ -6,11 +14,10 @@ var parse = function (reader, name, types, listener) {
             "i8": reader.snapshot().readInt8(),
             "i16": reader.snapshot().readInt16(),
             "i32": reader.snapshot().readInt32(),
-            "hex": ("0000000" + reader.snapshot().readUInt32().toString(16)).slice(-8),
+            "hex": hex(reader.snapshot().readUInt32()),
             "f32": reader.snapshot().readFloat32()
         };
 
-        value.hex = value.hex.slice(6, 8) + value.hex.slice(4, 6) + value.hex.slice(2, 4) + value.hex.slice(0, 2);
         if ((value.i8 === 0) || (value.i8 === value.i16)) {
             delete value.i8;
         }
@@ -23,14 +30,14 @@ var parse = function (reader, name, types, listener) {
             delete value.f32;
         }
 
-        return value; 
+        return value;
     }
 
     switch (name) {
 
         case "&": { return reader.offset + reader.readInt32(); break; };
 
-        case "hex": { return ("0000000" + reader.readUInt32().toString(16)).slice(-8); };
+        case "hex": { return hex(reader.readUInt32()); };
 
         case "i8": { return reader.readInt8(); };
         case "u8": { return reader.readUInt8(); };
@@ -53,7 +60,7 @@ var parse = function (reader, name, types, listener) {
                 var element = name.slice(1);
                 if (element[element.length - 1] == "]") {
                     element = element.slice(0, -1);
-                } 
+                }
 
                 // var listReader = reader.snapshot();
 
@@ -113,7 +120,7 @@ var parse = function (reader, name, types, listener) {
                     var column = type[looper / 2 - 1];
                     if (!column) {
                         column = [];
-                    } 
+                    }
                     if (!column[0]) {
                         column[0] = ((looper - 2) / 2) + "-unknown";
                         if (column.length < 3) {
