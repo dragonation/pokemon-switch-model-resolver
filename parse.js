@@ -105,8 +105,8 @@ parsers[".gfmdl"] = function (reader, type) {
         ],
         "material": [
             [null, "i32"],
-            ["material", "&str"],
-            ["shader", "&str"],
+            ["name", "&str"],
+            ["shaderGroup", "&str"],
             [null, "u8", 0],
             [null, "u8"],
             [null, "u8"],
@@ -117,15 +117,30 @@ parsers[".gfmdl"] = function (reader, type) {
             ["parameter5", "i32"],
             ["parameter6", "i32"],
             ["textures", "&[&texture]"],
-            ["parameterA", "i32"],
-            ["parameterB", "i32"],
-            ["parameterC", "i32"],
+            ["switches", "&[&material_switch]"],
+            ["values", "&[&material_value]"],
+            ["colors", "&[&material_color]"],
             [null, "u8"],
             [null, "u8"],
             [null, "u8"],
             [null, "u8"],
             [null, "u8"],
             [null, "u32", 4],
+        ],
+        "material_switch": [
+            ["name", "str"],
+            ["format", "i32", 4],
+            ["value", "u8"]
+        ],
+        "material_value": [
+            ["name", "str"],
+            ["format", "i32"], // 4 for i32, 8 for f32
+            ["value", "i32"]
+        ],
+        "material_color": [
+            ["name", "str"],
+            ["format", "i32", 4], // 4 for f32, 8 for i32; but no found 8 in models currently
+            ["value", "[3:f32]"]
         ],
         "texture": [
             ["channel", "str"],
@@ -153,7 +168,7 @@ parsers[".gfmdl"] = function (reader, type) {
         ],
         "submesh_polygon": [
             ["data_offset", "i32"],
-            ["material", "u32"],
+            ["materialID", "u32"],
             [null, "u32", 4]
         ]
     }, (object) => {
@@ -172,22 +187,51 @@ parsers[".gfmdl"] = function (reader, type) {
                     });
                 });
 
+                object.submeshes.forEach((submesh) => {
+                    submesh.polygons.forEach((polygon) => {
+                        polygon.material = object.materials[polygon.materialID].name;
+                    });
+                });
+
                 break;
             };
 
             case "material": {
-                @dump(object);
+
+                var switches = {};
+                object.switches.forEach((value) => {
+                    switches[value.name] = value.value ? true : false;
+                });
+                object.switches = switches;
+
+                var values = {};
+                object.values.forEach((value) => {
+                    if (value.format === 8) { // f32
+                        values[value.name] = value.value;
+                        var buffer = Buffer.alloc(4);
+                        buffer.writeInt32LE(value.value, 0);
+                        values[value.name] = buffer.readFloatLE(0);
+                    } else if (value.format === 4) { // i32
+                        values[value.name] = value.value;
+                    }
+                });
+                object.values = values;
+
+                var colors = {};
+                object.colors.forEach((value) => {
+                    colors[value.name] = value.value;
+                });
+                object.colors = colors;
+
                 break;
             };
 
-            case "texture": {
-                // @dump(object);
+            case "mesh": {
                 break;
             };
 
             case "submesh_polygon": {
                 // TODO: load data
-                // @dump(object);
                 break;
             };
 
@@ -238,6 +282,8 @@ parsers[".gfmdl"] = function (reader, type) {
         delete object.@layouts;
 
     });
+
+    @dump(result);
 
     return result;
 
