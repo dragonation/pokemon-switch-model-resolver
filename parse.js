@@ -77,7 +77,7 @@ parsers[".gfmdl"] = function (reader, type) {
 
     var result = gfbin.file(reader, "model", {
         "model": [
-            [null, "hex", "00000000"],
+            [null, "hex", "00000000"], // sometimes 1 ??
             ["modelVersion", "hex"],
             ["boundingBox", "[2:[3:f32]]"],
             ["textures", "&[&str]"],
@@ -140,7 +140,7 @@ parsers[".gfmdl"] = function (reader, type) {
         "material_color": [
             ["name", "str"],
             ["format", "i32", 4], // 4 for f32, 8 for i32; but no found 8 in models currently
-            ["value", "[3:f32]"]
+            ["value", "[3:f32]"] // [3:${if(format == 4, 'f32', 'i32')}]
         ],
         "texture": [
             ["channel", "str"],
@@ -226,15 +226,6 @@ parsers[".gfmdl"] = function (reader, type) {
                 break;
             };
 
-            case "mesh": {
-                break;
-            };
-
-            case "submesh_polygon": {
-                // TODO: load data
-                break;
-            };
-
             case "submesh_format": {
 
                 var type = function (value) {
@@ -267,8 +258,6 @@ parsers[".gfmdl"] = function (reader, type) {
 
                 object.format = format(object.formatID);
                 object.type = format(object.typeID);
-
-                // @dump(object);
 
                 break;
             };
