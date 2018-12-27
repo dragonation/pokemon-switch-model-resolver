@@ -102,7 +102,9 @@ var parse = function (reader, name, types, listener) {
                 var layouts = {};
 
                 var result = {
-                    "@type": name
+                    "@type": name,
+                    "@offset": origin,
+                    "@layouts": layouts
                 };
 
                 var looper = 2;
@@ -121,13 +123,20 @@ var parse = function (reader, name, types, listener) {
 
                     layouts[column[0]] = layoutReader.readUInt16();
                     if (layouts[column[0]] !== 0) {
+
                         var resultReader = reader.snapshot(origin + layouts[column[0]]);
-                        result[column[0]] = parse(resultReader, column[1], types, listener);
+
+                        if (column[1] && (column[1][0] === "@")) {
+                            result[column[0]] = parse(reader.snapshot(origin + reader.readInt32()), column[1].slice(1), types, listener);
+                        } else {
+                            result[column[0]] = parse(resultReader, column[1], types, listener);
+                        }
+
                         if (column.length > 2) {
                             if (result[column[0]] === column[2]) {
                                 delete result[column[0]];
                             } else {
-                                throw new Error("Invalid fixed data");
+                                @warn("Fixed data changed [" + name + "." + column[0] + "]: " + result[column[0]] + ", expected: " + column[2]);
                             }
                         }
                     } else {
