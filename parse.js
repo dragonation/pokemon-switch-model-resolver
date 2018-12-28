@@ -77,7 +77,7 @@ parsers[".gfmdl"] = function (reader, type) {
 
     var result = gfbin.file(reader, "model", {
         "model": [
-            ["version", "hex"], // sometimes 1 ??
+            ["formatVersion", "hex"], // sometimes 1 ??
             ["modelVersion", "hex"],
             ["boundingBox", "[2:[3:f32]]"],
             ["textures", "&[&str]"],
@@ -85,8 +85,8 @@ parsers[".gfmdl"] = function (reader, type) {
             ["emptyList", "&[&]"], // always zero length ??
             ["materialNames2", "&[&str]"], // TODO: the same as materialNames ??
             ["materials", "&[&material]"],
+            ["groups", "&[&group]"],
             ["meshes", "&[&mesh]"],
-            ["submeshes", "&[&submesh]"],
             ["bones", "&[&bone]"],
             [null, "i32", 64]
         ],
@@ -169,25 +169,25 @@ parsers[".gfmdl"] = function (reader, type) {
             ["allzero", "[4:i32]"],
             [null, "hex", "000000c0"],
         ],
-        "mesh": [
+        "group": [
             ["empty", "void"],
             ["bone", "u32"],
             ["index", "u32"],
             ["boundingBox", "[2:[3:f32]]"]
         ],
-        "submesh": [
+        "mesh": [
             ["dataSize", "u32"],
-            ["polygons", "&[&submesh_polygon]"],
-            ["formats", "&[&submesh_format]"], // pos | uv | ...
+            ["polygons", "&[&mesh_polygon]"],
+            ["alignments", "&[&mesh_alignment]"], // pos | uv | ...
             ["dataOffset", "&"]
         ],
-        "submesh_format": [
+        "mesh_alignment": [
             ["empty", "void"], 
             ["formatID", "u32"],
             ["typeID", "u32"],
             ["units", "u32"]
         ],
-        "submesh_polygon": [
+        "mesh_polygon": [
             ["dataSize", "u32"],
             ["materialID", "u32"],
             ["dataOffset", "&"]
@@ -200,10 +200,12 @@ parsers[".gfmdl"] = function (reader, type) {
 
                 if (object.emptyList.length > 0) {
                     @warn("Unknown empty list in model is not empty");
+                } else {
+                    delete object.emptyList;
                 }
 
-                object.meshes.forEach((mesh) => {
-                    mesh.name = object.bones[mesh.bone].name;
+                object.groups.forEach((group) => {
+                    group.name = object.bones[group.bone].name;
                 });
 
                 object.materials.forEach((material) => {
@@ -212,8 +214,8 @@ parsers[".gfmdl"] = function (reader, type) {
                     });
                 });
 
-                object.submeshes.forEach((submesh) => {
-                    submesh.polygons.forEach((polygon) => {
+                object.meshes.forEach((mesh) => {
+                    mesh.polygons.forEach((polygon) => {
                         polygon.material = object.materials[polygon.materialID].name;
                     });
                 });
@@ -284,7 +286,7 @@ parsers[".gfmdl"] = function (reader, type) {
                 break;
             };
 
-            case "submesh": {
+            case "mesh": {
 
                 var blobReader = reader.snapshot(object.dataOffset);
 
@@ -297,11 +299,9 @@ parsers[".gfmdl"] = function (reader, type) {
                 break;
             };
 
-            case "submesh_polygon": {
+            case "mesh_polygon": {
 
                 var blobReader = reader.snapshot(object.dataOffset);
-
-                blobReader.dump(128);
 
                 if (object.dataSize !== blobReader.readUInt32()) {
                     throw new Error("Invalid data offset with invalid data size");
@@ -312,7 +312,7 @@ parsers[".gfmdl"] = function (reader, type) {
                 break;
             };
 
-            case "submesh_format": {
+            case "mesh_format": {
 
                 var type = function (value) {
                     switch (value) {
@@ -369,6 +369,7 @@ parsers[".gfmdl"] = function (reader, type) {
         }
 
         delete object.@layouts;
+        delete object.@offset;
 
     });
 
