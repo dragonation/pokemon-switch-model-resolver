@@ -82,7 +82,7 @@ parsers[".gfmdl"] = function (reader, type) {
             ["boundingBox", "[2:[3:f32]]"],
             ["textures", "&[&str]"],
             ["materialNames", "&[&str]"],
-            [null, "&[&]"],
+            [null, "&[&]"], // always zero length ??
             ["materialNames2", "&[&str]"], // TODO: the same as materialNames ??
             ["materials", "&[&material]"],
             ["meshes", "&[&mesh]"],
@@ -106,10 +106,8 @@ parsers[".gfmdl"] = function (reader, type) {
         "material": [
             // edgeType, edgeID, edgeEnabled, projectionType
             // idEdgeOffset, edgeMapAlphaMask
-            // shaderType
-            // renderPriority
             // renderLayer
-            ["shader", "i32"],
+            ["shader", "shader"],
             ["name", "&str"],
             ["shaderGroup", "&str"],
             [null, "u8", 0],
@@ -122,9 +120,9 @@ parsers[".gfmdl"] = function (reader, type) {
             ["parameter5", "i32"],
             ["parameter6", "i32"],
             ["textures", "&[&texture]"],
-            ["switches", "&[&material_switch]"],
-            ["values", "&[&material_value]"],
-            ["colors", "&[&material_color]"],
+            ["switches", "&[&switch]"],
+            ["values", "&[&value]"],
+            ["colors", "&[&color]"],
             [null, "u8"],
             [null, "u8"],
             [null, "u8"],
@@ -132,20 +130,26 @@ parsers[".gfmdl"] = function (reader, type) {
             [null, "u8"],
             [null, "u32", 4],
         ],
-        "material_switch": [
+        "switch": [
             ["name", "str"],
             ["format", "i32", 4],
             ["value", "u8"]
         ],
-        "material_value": [
+        "value": [
             ["name", "str"],
-            ["format", "i32"], // 4 for i32, 8 for f32
+            ["format", "i32"], // 4 for i32, 8 for f32 in material, but reverse in shader?
             ["value", "i32"]
         ],
-        "material_color": [
+        "color": [
             ["name", "str"],
             ["format", "i32", 4], // 4 for f32, 8 for i32; but no found 8 in models currently
             ["value", "[3:f32]"] // [3:${if(format == 4, 'f32', 'i32')}]
+        ],
+        "shader": [
+            ["name", "str"],
+            ["switches", "&[&switch]"],
+            ["values", "&[&value]"],
+            ["colors", "&[&color]"],
         ],
         "texture": [
             ["channel", "str"],
@@ -178,7 +182,7 @@ parsers[".gfmdl"] = function (reader, type) {
             [null, "u32", 4]
         ],
         "submesh_format": [
-            [null, "i32"],
+            ["nextOffset", "i16"],
             ["typeID", "u32"],
             ["formatID", "u32"],
             ["units", "u32"]
@@ -213,6 +217,39 @@ parsers[".gfmdl"] = function (reader, type) {
                 break;
             };
 
+            case "shader": {
+
+                var switches = {};
+                object.switches.forEach((value) => {
+                    switches[value.name] = value.value ? true : false;
+                });
+                object.switches = switches;
+
+                var values = {};
+                object.values.forEach((value) => {
+                    // check type for 4 or 8
+                    if (value.format === 4) { // f32
+                        values[value.name] = value.value;
+                        var buffer = Buffer.alloc(4);
+                        buffer.writeInt32LE(value.value, 0);
+                        values[value.name] = buffer.readFloatLE(0);
+                    } else if (value.format === 8) { // i32
+                        values[value.name] = value.value;
+                    }
+                });
+                object.values = values;
+
+                var colors = {};
+                if (object.colors) {
+                    object.colors.forEach((value) => {
+                        colors[value.name] = value.value;
+                    });
+                }
+                object.colors = colors;
+
+                break;
+            };
+
             case "material": {
 
                 var switches = {};
@@ -240,54 +277,20 @@ parsers[".gfmdl"] = function (reader, type) {
                 });
                 object.colors = colors;
 
-                object.shader = gfbin(reader.snapshot(object.@offset + object.@layouts.shader), "shader", {
-                    "shader": [
-                        ["name", "str"],
-                        ["switches", "&[&shader_switch]"],
-                        ["values", "&[&shader_value]"],
-                        // colors
-                    ],
-                    "shader_switch": [
-                        ["name", "str"],
-                        ["format", "u32", 4],
-                        ["value", "u8"]
-                    ],
-                    "shader_value": [
-                        ["name", "str"],
-                        ["format", "u32", 4],
-                        ["value", "i32"]
-                    ]
-                }, (object) => {
-
-                    if (object.@type === "shader") {
-
-                        var switches = {};
-                        object.switches.forEach((value) => {
-                            switches[value.name] = value.value ? true : false;
-                        });
-                        object.switches = switches;
-
-                        var values = {};
-                        object.values.forEach((value) => {
-                            values[value.name] = value.value;
-                        });
-                        object.values = values;
-
-                    }
-
-                });
-
-                @dump(object);
-
                 break;
             };
 
-            // case "texture": {
-            //     @dump(object);
-            //     break;
-            // };
-
             case "submesh_format": {
+
+                // object.nextOffset += object.@layouts.nextOffset + object.@offset;
+
+                @dump([
+                      object.@offset,
+                      object.nextOffset,
+                      object.@layouts
+                ]);
+
+                reader.snapshot(object.@offset - 32).dump(128);
 
                 var type = function (value) {
                     switch (value) {
