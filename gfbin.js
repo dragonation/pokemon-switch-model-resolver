@@ -6,7 +6,19 @@ var hex = function (u32) {
 
 };
 
-var parse = function (reader, name, types, listener) {
+var parse = function (reader, name, types, listener, cache) {
+
+    if (!cache) {
+        cache = Object.create(null);
+    }
+
+    if (cache[reader.offset]) {
+        if (cache[reader.offset].type === "name") {
+            return cache[reader.offset].value;
+        } else {
+            throw new Error("Object be resolved as different type: " + name + ", expected before " + cache[reader.offset].type);
+        }
+    }
 
     if (!name) {
 
@@ -79,7 +91,7 @@ var parse = function (reader, name, types, listener) {
                 var looper = 0;
                 while (looper < count) {
 
-                    list.push(parse(reader, element, types, listener));
+                    list.push(parse(reader, element, types, listener, cache));
 
                     ++looper;
                 }
@@ -92,7 +104,7 @@ var parse = function (reader, name, types, listener) {
 
                 var offset = reader.offset + reader.readInt32();
 
-                return parse(reader.snapshot(offset), target, types, listener);
+                return parse(reader.snapshot(offset), target, types, listener, cache);
 
             } else {
 
@@ -136,9 +148,9 @@ var parse = function (reader, name, types, listener) {
                         var resultReader = reader.snapshot(origin + layouts[column[0]]);
 
                         if (column[1] && (column[1][0] === "@")) {
-                            result[column[0]] = parse(reader.snapshot(origin + reader.readInt32()), column[1].slice(1), types, listener);
+                            result[column[0]] = parse(reader.snapshot(origin + reader.readInt32()), column[1].slice(1), types, listener, cache);
                         } else {
-                            result[column[0]] = parse(resultReader, column[1], types, listener);
+                            result[column[0]] = parse(resultReader, column[1], types, listener, cache);
                         }
 
                         if (result[column[0]] === undefined) {

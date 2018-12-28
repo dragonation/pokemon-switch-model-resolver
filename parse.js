@@ -42,32 +42,139 @@ parsers[".bin-14-like-animation"] = function (reader, type) {
 
 parsers[".bin-18-like-animation"] = function (reader, type) {
 
-    // // @dump(reader.buffer.length);
-    // dump(reader, 256);
+    reader.dump(128);
 
-    var result = {
-        "signature": reader.readUInt32(),
-        "headers": [
-            [reader.readUInt16(), reader.readUInt16(), reader.readUInt16(), reader.readUInt16(), reader.readUInt32()],
-            [reader.readUInt16(), reader.readUInt16(), reader.readUInt16(), reader.readUInt16(), reader.readUInt32()]
+    var result = gfbin.file(reader, "animation_pack", {
+        "animation_pack": [
+            ["animationNames", "animation_names"], // maybe void
+            [null, "&test3"],
+            [null, "&test4"],
+            [null, "i32", 0], // zero
+            [null, "i32", 0], // zero
+            [null, "&test5"],
+            [null, "&test2"],
+            [null, "i32", 4]
         ],
-        "offsets": [
-            [reader.readUInt32(), reader.readUInt32(), reader.readUInt32(), reader.readUInt32(), reader.readUInt32(), reader.readInt32(), reader.readUInt32()],
-            []
+        "animation_names": [
+            ["count", "i32"],
+            ["list", "&[&animation_name]"]
         ],
-    };
-    // var animations = reader.readUInt32();
-    // var looper = 0;
-    // while (looper < animations) {
-    //     result.offsets[1].push(reader.readUInt32());
-    //     ++looper;
-    // }
-    // result.offsets[1].push(reader.readInt32());
+        "animation_name": [
+            ["filename", "str"],
+            ["name", "&str"],
+            [null, "i32", 4], 
+        ],
+        "test2": [
+            [null, "[&string]"],
+            ["intTracks", "&[&int_track]"],
+            ["floatTracks", "&[&float_key_frame]"],
+            [null, "i32"], 
+            [null, "i32", 4]
+        ],
+        "test3": [
+            [null, "i32"],
+            [null, "i32", 4]
+        ],
+        "test4": [
+            ["tracks", "[&track]"],
+            [null, "i32", 4]
+        ],
+        "test5": [
+            [null, "[&test6]"],
+            [null, "i32", 4]
+        ],
+        "test6": [
+            [null, "test7"],
+            [null, "i32"],
+            [null, "i32"],
+        ],
+        "test7": [
+            [null, "[&test8]"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "i32"],
+        ],
+        "test8": [
+            [null, "[&test9]"],
+            [null, "&str"],
+            [null, "i32"],
+            [null, "&str"],
+            [null, "i32"],
+            [null, "&[&float_key_frame]"],
+            [null, "&[&test9]"],
+        ],
+        "test9": [
+            [null, "i32"],
+            [null, "&str"],
+            [null, "i32"],
+            [null, "&str"],
+            [null, "&test11"],
+            [null, "&[&test10]"],
+            [null, "&[&]"],
+        ],
+        "test10": [
+            [null, "i32"],
+            [null, "&str"],
+            [null, "i32"],
+            [null, "f32"],
+            [null, "i32"],
+            [null, "f32"],
+            [null, "i32"],
+            [null, "i32"],
+        ],
+        "test11": [
+            [null, "str"],
+            [null, "i32"],
+            [null, "&string"],
+        ],
+        "track": [
+            ["name", "str"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "[2:f32]"],
+            [null, "[2:f32]"],
+            [null, "f32"]
+        ],
+        "int_track": [
+            ["name", "str"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "i32"],
+        ],
+        "float_key_frame": [
+            ["name", "str"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "f32"],
+        ],
+        "string": [
+            [null, "str"],
+            [null, "i32", 4],
+        ]
+    }, (object) => {
+
+        switch (object.@type) {
+
+            case "test8": {
+                @dump(object);
+                reader.snapshot(object.@offset).dump(128);
+                break;
+            };
+
+            default: {
+                break;
+            };
+
+        }
+
+        delete object.@layouts;
+        delete object.@offset;
+
+    });
+
     // @dump(result);
-
-    // 24, 0, 18, 16, 4, 0, 0, 8, 0, 12, 18, ...
-    // 24, 0, 8, 24, 4, 8, 0, 12, 16, 20, 18, ...
-    // 24, 0, 18, 24, 4, 8, 0, 12, 16, 20, 18, ...
 
     return result;
 
