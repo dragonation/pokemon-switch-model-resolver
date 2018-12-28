@@ -23,37 +23,30 @@ parsers[".gfpak"] = function (reader) {
 
 parsers[".bntx"] = function (reader, type) {
 
-    // dump(reader, 128);
-
 };
 
 parsers[".bnsh"] = function (reader, type) {
-
-    // dump(reader, 128);
 
 };
 
 parsers[".bin-14-like-animation"] = function (reader, type) {
 
-    // @dump(reader.buffer.length);
-    // dump(reader, 512);
-
 };
 
 parsers[".bin-18-like-animation"] = function (reader, type) {
 
-    reader.dump(128);
+    // reader.dump(128);
 
     var result = gfbin.file(reader, "animation_pack", {
         "animation_pack": [
-            ["animationNames", "animation_names"], // maybe void
+            ["empty", "void"],
             [null, "&test3"],
             [null, "&test4"],
             [null, "i32", 0], // zero
             [null, "i32", 0], // zero
             [null, "&test5"],
             [null, "&test2"],
-            [null, "i32", 4]
+            ["animationNames", "&animation_names"],
         ],
         "animation_names": [
             ["count", "i32"],
@@ -62,59 +55,52 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
         "animation_name": [
             ["filename", "str"],
             ["name", "&str"],
-            [null, "i32", 4], 
+            [null, "i32", 4],
         ],
         "test2": [
             [null, "[&string]"],
             ["intTracks", "&[&int_track]"],
-            ["floatTracks", "&[&float_key_frame]"],
-            [null, "i32"], 
+            ["floatTracks", "&[&key_frame]"],
+            [null, "&[&string]"],
             [null, "i32", 4]
         ],
         "test3": [
-            [null, "i32"],
-            [null, "i32", 4]
+            ["empty", "void"],
+            [null, "&[&test12]"],// &[&test7]
+            [null, "&test6"]
         ],
         "test4": [
             ["tracks", "[&track]"],
             [null, "i32", 4]
         ],
         "test5": [
-            [null, "[&test6]"],
-            [null, "i32", 4]
+            ["empty", "void"],
+            ["trees", "&[&tree]"]
         ],
         "test6": [
-            [null, "test7"],
+            ["empty", "void"],
+            [null, "&test10"],
             [null, "i32"],
-            [null, "i32"],
-        ],
-        "test7": [
-            [null, "[&test8]"],
-            [null, "i32"],
-            [null, "i32"],
-            [null, "i32"],
-            [null, "i32"],
-            [null, "i32"],
-        ],
-        "test8": [
-            [null, "[&test9]"],
-            [null, "&str"],
-            [null, "i32"],
-            [null, "&str"],
-            [null, "i32"],
-            [null, "&[&float_key_frame]"],
-            [null, "&[&test9]"],
-        ],
-        "test9": [
-            [null, "i32"],
-            [null, "&str"],
-            [null, "i32"],
-            [null, "&str"],
-            [null, "&test11"],
-            [null, "&[&test10]"],
-            [null, "&[&]"],
+            [null, "&test8"],
         ],
         "test10": [
+            [null, "[&test12]"]
+        ],
+        "tree": [
+            ["empty", "void"],
+            ["name", "&str"],
+            ["root", "&node"],
+        ],
+        "node": [
+            ["empty", "void"],
+            ["path", "&str"],
+            [null, "i32"],
+            ["space", "&str"],
+            [null, "&test11"],
+            ["siblings", "&[&sibling]"],
+            ["children", "&[&node]"],
+        ],
+        "sibling": [
             [null, "i32"],
             [null, "&str"],
             [null, "i32"],
@@ -125,13 +111,49 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
             [null, "i32"],
         ],
         "test11": [
-            [null, "str"],
+            ["empty", "void"],
+            ["space", "&str"],
+            ["name", "&string"],
+            ["value", "f32"],
+        ],
+        "test12": [
+            ["empty", "void"],
             [null, "i32"],
-            [null, "&string"],
+            [null, "&str"],
+            [null, "&test13"],
+        ],
+        "test13": [
+            ["empty", "void"],
+            [null, "&test16"],
+            [null, "&test14"],
+            [null, "&test16"],
+        ],
+        "test14": [
+            ["empty", "void"],
+            [null, "u8"],
+            [null, "&[&test15]"],
+        ],
+        "test15": [
+            ["empty", "void"],
+            [null, "&str"],
+            [null, "&string_2"],
+            [null, "&test16"],
+            [null, "&test16"],
+        ],
+        "test16": [
+            ["empty", "void"],
+            [null, "u8"],
+            [null, "&[&string]"],
+        ],
+        "test17": [
+        ],
+        "string_2": [
+            ["content", "str"],
+            [null, "u8"]
         ],
         "track": [
-            ["name", "str"],
-            [null, "i32"],
+            ["empty", "void"],
+            ["name", "&str"],
             [null, "i32"],
             [null, "[2:f32]"],
             [null, "[2:f32]"],
@@ -143,23 +165,25 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
             [null, "i32"],
             [null, "i32"],
         ],
-        "float_key_frame": [
+        "key_frame": [
             ["name", "str"],
             [null, "i32"],
             [null, "i32"],
-            [null, "f32"],
+            [null, "i32"],
         ],
         "string": [
-            [null, "str"],
-            [null, "i32", 4],
+            ["empty", "void"],
+            ["content", "&str"],
         ]
     }, (object) => {
 
         switch (object.@type) {
 
-            case "test8": {
-                @dump(object);
-                reader.snapshot(object.@offset).dump(128);
+            case "animation_pack": {
+                // if (object["2-unknown"]) {
+                    @dump(object);
+                    reader.snapshot(object.@offset).dump(128);
+                // }
                 break;
             };
 
@@ -289,7 +313,7 @@ parsers[".gfmdl"] = function (reader, type) {
             ["dataOffset", "&"]
         ],
         "mesh_alignment": [
-            ["empty", "void"], 
+            ["empty", "void"],
             ["typeID", "u32"],
             ["formatID", "u32"],
             ["unitCount", "u32"]
@@ -522,14 +546,9 @@ parsers[".gfmdl"] = function (reader, type) {
 
 parsers[".bin-04-like-variant-table"] = function (reader, type) {
 
-    // @dump(reader.buffer.length);
-    // dump(reader, 10000);
-
 };
 
 parsers[".bin-44-like-meta"] = function (reader, type) {
-
-    // dump(reader, 256);
 
 };
 

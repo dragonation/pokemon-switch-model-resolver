@@ -8,15 +8,20 @@ var hex = function (u32) {
 
 var parse = function (reader, name, types, listener, cache) {
 
+    if (name === "void") {
+        return undefined;
+    }
+
     if (!cache) {
         cache = Object.create(null);
     }
 
     if (cache[reader.offset]) {
-        if (cache[reader.offset].type === "name") {
+        if ((cache[reader.offset].type === name) || (name === undefined)) {
+            @error("duplicated " + name + ": " + reader.offset);
             return cache[reader.offset].value;
         } else {
-            throw new Error("Object be resolved as different type: " + name + ", expected before " + cache[reader.offset].type);
+            throw new Error("Object be resolved as different type: " + name + ", expected " + cache[reader.offset].type);
         }
     }
 
@@ -76,7 +81,7 @@ var parse = function (reader, name, types, listener, cache) {
                     element = element.slice(0, -1);
                 }
 
-                // var listReader = reader.snapshot();
+                var origin = reader.offset;
 
                 var count = 0;
                 if (/^[0-9]+:/.test(element)) {
@@ -95,6 +100,8 @@ var parse = function (reader, name, types, listener, cache) {
 
                     ++looper;
                 }
+
+                cache[origin] = { "type": name, "value": list };
 
                 return list;
 
@@ -176,6 +183,8 @@ var parse = function (reader, name, types, listener, cache) {
                 if (listener) {
                     listener(result);
                 }
+
+                cache[origin] = { "type": name, "value": result };
 
                 return result;
 
