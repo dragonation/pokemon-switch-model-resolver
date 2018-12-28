@@ -77,18 +77,18 @@ parsers[".gfmdl"] = function (reader, type) {
 
     var result = gfbin.file(reader, "model", {
         "model": [
-            [null, "hex", "00000000"], // sometimes 1 ??
+            ["version", "hex"], // sometimes 1 ??
             ["modelVersion", "hex"],
             ["boundingBox", "[2:[3:f32]]"],
             ["textures", "&[&str]"],
             ["materialNames", "&[&str]"],
-            [null, "&[&]"], // always zero length ??
+            ["emptyList", "&[&]"], // always zero length ??
             ["materialNames2", "&[&str]"], // TODO: the same as materialNames ??
             ["materials", "&[&material]"],
             ["meshes", "&[&mesh]"],
             ["submeshes", "&[&submesh]"],
             ["bones", "&[&bone]"],
-            [null, "i32"]
+            [null, "i32", 64]
         ],
         "bone": [
             ["name", "str"],
@@ -96,7 +96,7 @@ parsers[".gfmdl"] = function (reader, type) {
             ["flag", "u32"],
             ["parent", "i32"],
             [null, "u32", 0],
-            [null, "u8"],  // TODO: the same as flag ??
+            ["flag2", "u8"],  // TODO: the same as flag ??
             ["scale", "[3:f32]"],
             ["rotation", "[3:f32]"],
             ["translation", "[3:f32]"],
@@ -161,16 +161,16 @@ parsers[".gfmdl"] = function (reader, type) {
             // mappingType, scale, translation, rotation,
             // wrapS, wrapT, magFilter, minFilter
             // minLOD
-            [null, "hex"],
-            [null, "i32"],
-            [null, "i32"],
-            [null, "i32"],
-            [null, "i32"],
-            [null, "i32"],
-            [null, "hex"],
+            ["empty", "void"],
+            [null, "i32"], // 0 or 1
+            [null, "i32"], // 0 or 1
+            [null, "i32"], // 0 or 1
+            [null, "i32"], // 0 or 1
+            ["allzero", "[4:i32]"],
+            [null, "hex", "000000c0"],
         ],
         "mesh": [
-            [null, "hex"],
+            ["empty", "void"],
             ["bone", "u32"],
             ["index", "u32"],
             ["boundingBox", "[2:[3:f32]]"]
@@ -182,9 +182,9 @@ parsers[".gfmdl"] = function (reader, type) {
             [null, "u32", 4]
         ],
         "submesh_format": [
-            ["nextOffset", "i16"],
-            ["typeID", "u32"],
+            ["empty", "void"], // seems is the next format link, linked-list like
             ["formatID", "u32"],
+            ["typeID", "u32"],
             ["units", "u32"]
         ],
         "submesh_polygon": [
@@ -197,6 +197,10 @@ parsers[".gfmdl"] = function (reader, type) {
         switch (object.@type) {
 
             case "model": {
+
+                if (object.emptyList.length > 0) {
+                    @warn("Unknown empty list in model is not empty");
+                }
 
                 object.meshes.forEach((mesh) => {
                     mesh.name = object.bones[mesh.bone].name;
@@ -282,18 +286,9 @@ parsers[".gfmdl"] = function (reader, type) {
 
             case "submesh_format": {
 
-                // object.nextOffset += object.@layouts.nextOffset + object.@offset;
-
-                @dump([
-                      object.@offset,
-                      object.nextOffset,
-                      object.@layouts
-                ]);
-
-                reader.snapshot(object.@offset - 32).dump(128);
-
                 var type = function (value) {
                     switch (value) {
+                        case 0x00: { return "f32"; }; // need to check
                         case 0x01: { return "f16"; };
                         case 0x02: { return "f32"; };
                         case 0x03: { return "u8"; };
@@ -321,14 +316,27 @@ parsers[".gfmdl"] = function (reader, type) {
                 };
 
                 object.format = format(object.formatID);
-                object.type = format(object.typeID);
+                object.type = type(object.typeID);
 
                 break;
             };
 
-            default: {
+            case "texture_mapping": {
+
+                if ((object.allzero[0] !== 0) &&
+                    (object.allzero[1] !== 0) &&
+                    (object.allzero[2] !== 0) ||
+                    (object.allzero[3] !== 0)) {
+                    @warn("Not all zero in texture mapping info");
+                } else {
+                    delete object.allzero;
+                }
+
                 break;
-            }
+
+            };
+
+            default: { break; };
 
         }
 

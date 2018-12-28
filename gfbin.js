@@ -35,7 +35,9 @@ var parse = function (reader, name, types, listener) {
 
     switch (name) {
 
-        case "&": { return reader.offset + reader.readInt32(); break; };
+        case "&": { return reader.offset + reader.readInt32(); };
+
+        case "void": { return undefined; };
 
         case "hex": { return hex(reader.readUInt32()); };
 
@@ -137,6 +139,10 @@ var parse = function (reader, name, types, listener) {
                             result[column[0]] = parse(reader.snapshot(origin + reader.readInt32()), column[1].slice(1), types, listener);
                         } else {
                             result[column[0]] = parse(resultReader, column[1], types, listener);
+                        }
+
+                        if (result[column[0]] === undefined) {
+                            delete result[column[0]];
                         }
 
                         if (column.length > 2) {
