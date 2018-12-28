@@ -176,21 +176,21 @@ parsers[".gfmdl"] = function (reader, type) {
             ["boundingBox", "[2:[3:f32]]"]
         ],
         "submesh": [
-            ["data", "i32"],
+            ["dataSize", "u32"],
             ["polygons", "&[&submesh_polygon]"],
             ["formats", "&[&submesh_format]"], // pos | uv | ...
-            [null, "u32", 4]
+            ["dataOffset", "&"]
         ],
         "submesh_format": [
-            ["empty", "void"], // seems is the next format link, linked-list like
+            ["empty", "void"], 
             ["formatID", "u32"],
             ["typeID", "u32"],
             ["units", "u32"]
         ],
         "submesh_polygon": [
-            ["data_offset", "i32"],
+            ["dataSize", "u32"],
             ["materialID", "u32"],
-            [null, "u32", 4]
+            ["dataOffset", "&"]
         ]
     }, (object) => {
 
@@ -280,6 +280,34 @@ parsers[".gfmdl"] = function (reader, type) {
                     colors[value.name] = value.value;
                 });
                 object.colors = colors;
+
+                break;
+            };
+
+            case "submesh": {
+
+                var blobReader = reader.snapshot(object.dataOffset);
+
+                if (object.dataSize !== blobReader.readUInt32()) {
+                    throw new Error("Invalid data offset with invalid data size");
+                }
+
+                object.vertices = blobReader.readBLOB(object.dataSize);
+
+                break;
+            };
+
+            case "submesh_polygon": {
+
+                var blobReader = reader.snapshot(object.dataOffset);
+
+                blobReader.dump(128);
+
+                if (object.dataSize !== blobReader.readUInt32()) {
+                    throw new Error("Invalid data offset with invalid data size");
+                }
+
+                object.triangles = blobReader.readBLOB(object.dataSize);
 
                 break;
             };
