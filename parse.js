@@ -183,9 +183,9 @@ parsers[".gfmdl"] = function (reader, type) {
         ],
         "mesh_alignment": [
             ["empty", "void"], 
-            ["formatID", "u32"],
             ["typeID", "u32"],
-            ["units", "u32"]
+            ["formatID", "u32"],
+            ["unitCount", "u32"]
         ],
         "mesh_polygon": [
             ["dataSize", "u32"],
@@ -216,7 +216,17 @@ parsers[".gfmdl"] = function (reader, type) {
 
                 object.meshes.forEach((mesh) => {
                     mesh.polygons.forEach((polygon) => {
+
                         polygon.material = object.materials[polygon.materialID].name;
+
+                        polygon.indexSize = 2;
+                        polygon.unitSize = polygon.indexSize * 3;
+                        polygon.unitCount = polygon.dataSize / polygon.unitSize;
+
+                        // TODO: check for geometry shader
+
+                        // @dump(polygon);
+
                     });
                 });
 
@@ -294,6 +304,15 @@ parsers[".gfmdl"] = function (reader, type) {
                     throw new Error("Invalid data offset with invalid data size");
                 }
 
+                var offset = 0;
+                object.alignments.forEach((alignment) => {
+                    alignment.dataOffset = offset;
+                    offset += alignment.dataSize;
+                });
+
+                object.dataStride = offset;
+                object.vertexCount = object.dataSize / object.dataStride;
+
                 object.vertices = blobReader.readBLOB(object.dataSize);
 
                 break;
@@ -312,21 +331,33 @@ parsers[".gfmdl"] = function (reader, type) {
                 break;
             };
 
-            case "mesh_format": {
+            case "mesh_alignment": {
 
-                var type = function (value) {
+                var format = function (value) {
                     switch (value) {
-                        case 0x00: { return "f32"; }; // need to check
-                        case 0x01: { return "f16"; };
+                        case 0x00: { return "f32"; };
+                        case 0x01: { return "f16"; }; // half-float
                         case 0x02: { return "f32"; };
                         case 0x03: { return "u8"; };
                         case 0x05: { return "u16"; };
-                        case 0x08: { return "u16_f32"; };
+                        case 0x08: { return "u8_f32"; }; // byte / 255
                         default: { return value; };
                     }
                 };
 
-                var format = function (value) {
+                var unitSize = function (value) {
+                    switch (value) {
+                        case 0x00: { return 4; };
+                        case 0x01: { return 2; }; // half-float
+                        case 0x02: { return 4; };
+                        case 0x03: { return 1; };
+                        case 0x05: { return 2; };
+                        case 0x08: { return 1; }; // byte / 255
+                        default: { return value; };
+                    }
+                };
+
+                var type = function (value) {
                     switch (value) {
                         case 0x00: { return "position"; };
                         case 0x01: { return "normal"; };
@@ -344,7 +375,10 @@ parsers[".gfmdl"] = function (reader, type) {
                 };
 
                 object.format = format(object.formatID);
+                object.unitSize = unitSize(object.formatID);
                 object.type = type(object.typeID);
+
+                object.dataSize = object.unitSize * object.unitCount;
 
                 break;
             };
