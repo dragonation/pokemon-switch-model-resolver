@@ -31,31 +31,56 @@ parsers[".bnsh"] = function (reader, type) {
 
 parsers[".bin-14-like-animation"] = function (reader, type) {
 
+    var result = gfbin.file(reader, "animation", {
+        "animation": [
+            ["empty", "void"],
+            [null, "&t0"],
+            [null, "&t1"],
+            [null, "&"],
+            [null, "&"],
+            [null, "&"],
+        ],
+        "t0": [
+            ["empty", "void"],
+            [null, "i32"],
+            [null, "i32"],
+            [null, "i32"],
+        ],
+        "t1": [
+
+        ]
+    }, (object) => {
+
+        // @dump(object);
+
+        // reader.snapshot(object["1-unknown"] - 32).dump(128);
+
+    });
+
+    return result;
 };
 
-parsers[".bin-18-like-animation"] = function (reader, type) {
+parsers[".gfalg"] = function (reader, type) {
 
-    // reader.dump(128);
-
-    var result = gfbin.file(reader, "animation_pack", {
-        "animation_pack": [
+    var result = gfbin.file(reader, "animation_logic", {
+        "animation_logic": [
             ["empty", "void"],
-            [null, "&test3"],
+            ["parts", "&part_list"],
             [null, "&test4"],
             [null, "i32", 0], // zero
             [null, "i32", 0], // zero
-            [null, "&test5"],
+            ["states", "&state_list"],
             [null, "&test2"],
-            ["animationNames", "&animation_names"],
+            ["animations", "&animation_list"],
         ],
-        "animation_names": [
+        "animation_list": [
             ["count", "i32"],
-            ["list", "&[&animation_name]"]
+            ["list", "&[&animation]"]
         ],
-        "animation_name": [
-            ["filename", "str"],
+        "animation": [
+            ["empty", "void"],
             ["name", "&str"],
-            [null, "i32", 4],
+            ["file", "&str"],
         ],
         "test2": [
             [null, "[&string]"],
@@ -64,24 +89,18 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
             [null, "&[&string]"],
             [null, "i32", 4]
         ],
-        "test3": [
+        "part_list": [
             ["empty", "void"],
-            [null, "&[&test12]"],// &[&test7]
-            [null, "&test6"]
+            ["list", "&[&test12]"],
+            [null, "i32", 4] // check why 4
         ],
         "test4": [
             ["tracks", "[&track]"],
             [null, "i32", 4]
         ],
-        "test5": [
+        "state_list": [
             ["empty", "void"],
-            ["trees", "&[&tree]"]
-        ],
-        "test6": [
-            ["empty", "void"],
-            [null, "&test10"],
-            [null, "i32"],
-            [null, "&test8"],
+            ["list", "&[&tree]"]
         ],
         "test10": [
             [null, "[&test12]"]
@@ -89,20 +108,20 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
         "tree": [
             ["empty", "void"],
             ["name", "&str"],
-            ["root", "&node"],
+            ["rootNode", "&state_node"],
         ],
-        "node": [
+        "state_node": [
             ["empty", "void"],
             ["path", "&str"],
-            [null, "i32"],
+            ["type", "i32"], // 1: ; 3: wildcard; 4: root
             ["space", "&str"],
-            [null, "&test11"],
-            ["siblings", "&[&sibling]"],
-            ["children", "&[&node]"],
+            ["animation", "&state_animation"],
+            ["nextStates", "&[&next_state]"],
+            ["children", "&[&state_node]"],
         ],
-        "sibling": [
+        "next_state": [
             [null, "i32"],
-            [null, "&str"],
+            ["path", "&str"],
             [null, "i32"],
             [null, "f32"],
             [null, "i32"],
@@ -110,46 +129,35 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
             [null, "i32"],
             [null, "i32"],
         ],
-        "test11": [
+        "state_animation": [
             ["empty", "void"],
             ["space", "&str"],
             ["name", "&string"],
-            ["value", "f32"],
+            [null, "f32"],
         ],
         "test12": [
             ["empty", "void"],
-            [null, "i32"],
-            [null, "&str"],
-            [null, "&test13"],
+            ["id", "i32"],
+            ["name", "&str"],
+            ["objects", "&model_reference"],
         ],
-        "test13": [
+        "model_reference": [
             ["empty", "void"],
-            [null, "&test16"],
-            [null, "&test14"],
-            [null, "&test16"],
+            ["bones", "&string_list"],
+            ["meshes", "&mesh_list"],
+            [null, "&string_list"],
         ],
-        "test14": [
+        "mesh_list": [
             ["empty", "void"],
-            [null, "u8"],
-            [null, "&[&test15]"],
+            ["notEmpty", "u8"],
+            ["list", "&[&mesh]"],
         ],
-        "test15": [
+        "mesh": [
             ["empty", "void"],
-            [null, "&str"],
-            [null, "&string_2"],
-            [null, "&test16"],
-            [null, "&test16"],
-        ],
-        "test16": [
-            ["empty", "void"],
-            [null, "u8"],
-            [null, "&[&string]"],
-        ],
-        "test17": [
-        ],
-        "string_2": [
-            ["content", "str"],
-            [null, "u8"]
+            ["name", "&str"],
+            ["flag", "&byte"],
+            ["variants", "&string_list"],
+            [null, "&string_list"],
         ],
         "track": [
             ["empty", "void"],
@@ -171,18 +179,70 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
             [null, "i32"],
             [null, "i32"],
         ],
+        "string_list": [
+            ["empty", "void"],
+            ["notEmpty", "u8"],
+            ["list", "&[&string]"],
+        ],
         "string": [
             ["empty", "void"],
             ["content", "&str"],
-        ]
+        ],
+        "byte": [
+            ["empty", "void"],
+            ["value", "u8"]
+        ],
     }, (object) => {
 
         switch (object.@type) {
 
             case "animation_pack": {
-                // if (object["2-unknown"]) {
+
+                object.animations = object.animations.list;
+                object.states = object.states.list;
+
+                break;
+            };
+
+            case "byte": {
+                return object.value;
+            };
+
+            case "string": {
+                return object.content;
+            };
+
+            case "string_list": 
+            case "mesh_list": {
+                if (object.notEmpty && object.list) {
+                    return object.list;
+                } else {
+                    return [];
+                }
+                break;
+            };
+
+            case "animation_list": 
+            case "state_list":
+            case "part_list": {
+                return object.list;
+            };
+
+            case "mesh": {
+
+                if (object["4-unknown"].length) {
                     @dump(object);
-                    reader.snapshot(object.@offset).dump(128);
+                    reader.snapshot(Math.max(0, object.@offset - 32)).dump(128);
+                }
+                break;
+            };
+
+            case "test8": {
+
+                // if (object["4-unknown"].length) {
+                    @dump(object);
+                    // reader.snapshot(Math.max(0, object.@offset - 32)).dump(128);
+                    reader.snapshot(Math.max(0, object["0-unknown"] - 32)).dump(128);
                 // }
                 break;
             };
@@ -550,6 +610,75 @@ parsers[".bin-04-like-variant-table"] = function (reader, type) {
 
 parsers[".bin-44-like-meta"] = function (reader, type) {
 
+    var result = gfbin.file(reader, "meta", {
+        "meta": [
+            ["empty", "void"],
+            [null, "i32"],
+            [null, "i32"], // 0
+            ["pokemonID", "i16"],
+            [null, "i32"], // 0
+            [null, "i32"],
+            [null, "i32"],
+            [null, "i8"],
+            [null, "i8"], 
+            ["radiusX", "f32"], // -9
+            ["radiusY", "f32"],
+            ["radiusZ", "f32"],
+            ["minX", "f32"],
+            ["minY", "f32"],
+            ["minZ", "f32"],
+            ["maxX", "f32"],
+            ["maxY", "f32"],
+            ["maxZ", "f32"],
+            [null, "f32"], // -18
+            [null, "f32"],
+            [null, "f32"],
+            [null, "f32"],
+            ["elevationMin", "f32"],
+            ["elevationMax", "f32"], // -23
+            [null, "i32"], // 0
+            [null, "i8"], // -25
+            [null, "i32"], // 0
+            [null, "i32"], // 0
+            [null, "i32"], // 0
+            [null, "&[&string]"],
+            [null, "&t1"],
+        ],
+        "string": [
+            ["empty", "void"],
+            [null, "&str"],
+        ],
+        "t1": [
+            ["empty", "void"],
+            [null, "i32"], // 0
+            [null, "&[&]"]
+        ]
+    }, (object) => {
+
+        switch (object.@type) {
+
+            case "string": {
+                return object.content; 
+            };
+
+            case "meta": {
+                @dump(object);
+                break;
+            };
+
+            default: {
+                break;
+            };
+        }
+
+        delete object.@layouts;
+        delete object.@offset;
+
+        // reader.snapshot(object.@offset).dump();
+
+    });
+
+    return result;
 };
 
 module.exports = parse;
