@@ -44,7 +44,7 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
             [null, "&test4"],
             [null, "i32", 0], // zero
             [null, "i32", 0], // zero
-            [null, "&test5"],
+            ["states", "&states"],
             [null, "&test2"],
             ["animationNames", "&animation_names"],
         ],
@@ -58,10 +58,10 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
             [null, "i32", 4],
         ],
         "test2": [
-            [null, "[&string]"],
+            ["clips", "[&string]"],
             ["intTracks", "&[&int_track]"],
             ["floatTracks", "&[&key_frame]"],
-            [null, "&[&string]"],
+            ["triggers", "&[&string]"],
             [null, "i32", 4]
         ],
         "test3": [
@@ -73,9 +73,9 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
             ["tracks", "[&track]"],
             [null, "i32", 4]
         ],
-        "test5": [
+        "states": [
             ["empty", "void"],
-            ["trees", "&[&tree]"]
+            ["states", "&[&state_machine]"]
         ],
         "test6": [
             ["empty", "void"],
@@ -86,29 +86,29 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
         "test10": [
             [null, "[&test12]"]
         ],
-        "tree": [
+        "state_machine": [
             ["empty", "void"],
             ["name", "&str"],
-            ["root", "&node"],
+            ["root", "&state"],
         ],
-        "node": [
+        "state": [
             ["empty", "void"],
             ["path", "&str"],
-            [null, "i32"],
+            ["flag", "u32"], // 0b01 as entry, 0b11 as any
             ["space", "&str"],
             [null, "&test11"],
-            ["siblings", "&[&sibling]"],
-            ["children", "&[&node]"],
+            ["nextStates", "&[&next_state]"],
+            ["children", "&[&state]"],
         ],
-        "sibling": [
-            [null, "i32"],
-            [null, "&str"],
+        "next_state": [
+            ["empty", "void"],
+            ["name", "&str"],
+            ["flag", "u32"], // 2049?
+            ["value", "f32"], // 1
             [null, "i32"],
             [null, "f32"],
             [null, "i32"],
-            [null, "f32"],
-            [null, "i32"],
-            [null, "i32"],
+            [null, "i32"], // 4
         ],
         "test11": [
             ["empty", "void"],
@@ -145,7 +145,8 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
             [null, "u8"],
             [null, "&[&string]"],
         ],
-        "test17": [
+        "test8": [
+            [null, "i32"]
         ],
         "string_2": [
             ["content", "str"],
@@ -179,8 +180,8 @@ parsers[".bin-18-like-animation"] = function (reader, type) {
 
         switch (object.@type) {
 
-            case "animation_pack": {
-                // if (object["2-unknown"]) {
+            case "test2": {
+                // if (object["siblings"].length) {
                     @dump(object);
                     reader.snapshot(object.@offset).dump(128);
                 // }
