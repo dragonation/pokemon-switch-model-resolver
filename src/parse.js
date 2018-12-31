@@ -60,7 +60,7 @@ parsers[".bin-14-like-animation"] = function (reader, type) {
     return result;
 };
 
-parsers[".gfalg"] = function (reader, type) {
+parsers[".gfbsm"] = function (reader, type) {
 
     var result = gfbin.file(reader, "animation_logic", {
         "animation_logic": [
@@ -261,7 +261,7 @@ parsers[".gfalg"] = function (reader, type) {
 
 };
 
-parsers[".gfmdl"] = function (reader, type) {
+parsers[".gfbmdl"] = function (reader, type) {
 
     var result = gfbin.file(reader, "model", {
         "model": [
@@ -601,29 +601,48 @@ parsers[".gfmdl"] = function (reader, type) {
 
 };
 
-parsers[".bin-04-like-variant-table"] = function (reader, type) {
+parsers[".gfbanim"] = function (reader, type) {
 
-    var result = gfbin.file(reader, "vtable", {
-
-        "vtable": [
+    var result = gfbin.file(reader, "animation", {
+        "animation": [
             ["empty", "void"],
-            [null, "&t9"],
-            [null, "&t1"],
+            ["config", "&config"],
+            ["bones", "&bone_list"],
             [null, "&t10"],
-            [null, "&t0"],
+            ["groups", "&group_list"],
         ],
-        "t0": [
+        "config": [
             ["empty", "void"],
-            [null, "&[&t2]"]
+            [null, "i32", 0],
+            ["keyFrames", "i32"],
+            ["fps", "i32"],
+        ],
+        "bone_list": [
+            ["empty", "void"],
+            ["list", "&[&bone]"]
+        ],
+        "group_list": [
+            ["empty", "void"],
+            ["list", "&[&group]"],
+        ],
+        "group": [
+            ["empty", "void"],
+            ["name", "&str"],
+            ["flag", "u8"], // 1 for normal, 3 for object?
+            ["flag2", "&group_flag"]
+        ],
+        "group_flag": [
+            ["empty", "void"],
+            ["flag", "u8"],
         ],
         "t1": [
             ["empty", "void"],
             [null, "&[&t4]"]
         ],
-        "t2": [
+        "bone": [
             ["empty", "void"],
-            [null, "&str"],
-            [null, "u8"],
+            ["name", "&str"],
+            ["flag", "u8"],
             [null, "&t3"],
         ],
         "t3": [
@@ -662,12 +681,7 @@ parsers[".bin-04-like-variant-table"] = function (reader, type) {
             ["empty", "void"],
             ["data", "[3:f32]"]
         ],
-        "t9": [
-            ["empty", "void"],
-            [null, "i32"], // 0
-            [null, "i32"],
-            [null, "i32"],
-        ],
+
         "t10": [
             ["empty", "void"],
             [null, "&[&t11]"]
@@ -719,11 +733,16 @@ parsers[".bin-04-like-variant-table"] = function (reader, type) {
 
         switch (object.@type) {
 
-            case "t9": {
-                // if (object["10-unknown"]) {
+            case "bone_list":
+            case "group_list": {
+                return object.list;
+            };
+
+            case "group_flag": {
+                if (object["2-unknown"]) {
                     @dump(object);
                     reader.snapshot(object.@offset).dump(128);
-                // }
+                }
                 break;
             };
 
@@ -741,7 +760,7 @@ parsers[".bin-04-like-variant-table"] = function (reader, type) {
     return result;
 };
 
-parsers[".gfpkm"] = function (reader, type) {
+parsers[".gfbpkm"] = function (reader, type) {
 
     var result = gfbin.file(reader, "meta", {
         "meta": [
@@ -779,7 +798,7 @@ parsers[".gfpkm"] = function (reader, type) {
         ],
         "string": [
             ["empty", "void"],
-            [null, "&str"],
+            ["content", "&str"],
         ],
         "t1": [
             ["empty", "void"],

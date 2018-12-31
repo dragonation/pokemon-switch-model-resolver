@@ -95,9 +95,7 @@ var parse = function (reader, name, types, listener, cache) {
 
                 var looper = 0;
                 while (looper < count) {
-
                     list.push(parse(reader, element, types, listener, cache));
-
                     ++looper;
                 }
 

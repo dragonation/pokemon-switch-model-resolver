@@ -1,16 +1,40 @@
-let Reader = require("./reader.js");
+let Reader = require("./src/reader.js");
 
-let parse = require("./parse.js");
+let parse = require("./src/parse.js");
 
 // var filePath = @.fs.resolvePath(__dirname, "romfs/bin/archive/pokemon/pm0004_00.gfpak");
 
-var filePath = @.fs.resolvePath(__dirname, "pm0001_00.gfpak");
+var filePath = @.fs.resolvePath(__dirname, "sample/pm0001_00.gfpak");
 
 try {
 
     var package = parse(new Reader(@.fs.readFile.sync(filePath)), @.fs.extname(filePath));
 
-    @.fs.writeFile.sync("test.json", JSON.stringify(package.files.filter((x) => x.type === ".bin-14-like-animation")[0].content));
+    var folders = [];
+
+    package.files.forEach((file) => {
+        if (!folders[file.folder]) {
+            folders[file.folder] = [];
+        }
+        folders[file.folder].push({
+            "content": file.content,
+            "flag": file.flag,
+            "padding": file.padding,
+            "type": file.type,
+            "folder": file.folder
+        });
+    });
+
+    @.fs.writeFile.sync("test.html", [
+                        "<html>",
+                        "    <script>",
+                        "window.gfpak = " + JSON.stringify({
+                            "file": @.fs.filename(filePath),
+                            "folders": folders
+                        }) + ";",
+                        "console.log(window.gfpak);",
+                        "    </script>",
+                        "</html>"].join("\n"));
 
     @warn("Package parsed");
 
