@@ -173,7 +173,28 @@ var parse = function (reader, name, types, listener, cache) {
                         }
                     } else {
                         if (column.length < 3) {
-                            result[column[0]] = 0;
+                            if (column[1]) {
+                                switch (column[1].replace(/^#+/, "")) {
+                                    case "hex": { result[column[0]] = "00000000"; break; };
+                                    case "i8": case "u8":
+                                    case "i16": case "u16":
+                                    case "i32": case "u32":
+                                    case "i64": case "u64":
+                                    case "f32": case "f64": { result[column[0]] = 0; break; };
+                                    case "str": { result[column[0]] = ""; break; };
+                                    default: {
+                                        if (column[1].replace(/^#+/, "")[0] === "[") {
+                                            result[column[0]] = [];
+                                        } else {
+                                            result[column[0]] = null;
+                                        }
+                                        break;
+                                    }
+                                }
+                            } else {
+                                result[column[0]] = 0;
+                            }
+
                         }
                     }
 
@@ -181,10 +202,15 @@ var parse = function (reader, name, types, listener, cache) {
                 }
 
                 if (listener) {
-                    listener(result);
+                    var result2 = listener(result);
+                    if (result2 !== undefined) {
+                        result = result2;
+                    }
                 }
 
-                cache[origin] = { "type": name, "value": result };
+                if (name) {
+                    cache[origin] = { "type": name, "value": result };
+                }
 
                 return result;
 

@@ -51,9 +51,9 @@ var guessFileType = function (reader) {
             switch (signature.split(" ")[0]) {
                 case "04000000": { type = ".bin-04-like-variant-table"; break; };
                 case "14000000": { type = ".bin-14-like-animation"; break; };
-                case "18000000": { type = ".bin-18-like-animation"; break; };
+                case "18000000": { type = ".gfalg"; break; };
                 case "20000000": { type = ".gfmdl"; break; };
-                case "44000000": { type = ".bin-44-like-meta"; break; };
+                case "44000000": { type = ".gfpkm"; break; };
                 default: {
                     break;
                 };
