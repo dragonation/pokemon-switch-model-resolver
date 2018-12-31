@@ -152,10 +152,15 @@ var parse = function (reader, name, types, listener, cache) {
 
                         var resultReader = reader.snapshot(origin + layouts[column[0]]);
 
-                        if (column[1] && (column[1][0] === "@")) {
-                            result[column[0]] = parse(reader.snapshot(origin + reader.readInt32()), column[1].slice(1), types, listener, cache);
+                        var columnType = column[1];
+                        if (columnType && (columnType.indexOf("${") !== -1)) {
+                            columnType = @.format(columnType, result, {});
+                        }
+
+                        if (columnType && (columnType[0] === "@")) {
+                            result[column[0]] = parse(reader.snapshot(origin + reader.readInt32()), columnType.slice(1), types, listener, cache);
                         } else {
-                            result[column[0]] = parse(resultReader, column[1], types, listener, cache);
+                            result[column[0]] = parse(resultReader, columnType, types, listener, cache);
                         }
 
                         if (result[column[0]] === undefined) {
@@ -172,7 +177,11 @@ var parse = function (reader, name, types, listener, cache) {
                     } else {
                         if (column.length < 3) {
                             if (column[1]) {
-                                switch (column[1].replace(/^#+/, "")) {
+                                var columnType = column[1];
+                                if (columnType && (columnType.indexOf("${") !== -1)) {
+                                    columnType = @.format(columnType, result, {});
+                                }
+                                switch (columnType.replace(/^#+/, "")) {
                                     case "hex": { result[column[0]] = "00000000"; break; };
                                     case "i8": case "u8":
                                     case "i16": case "u16":
@@ -181,7 +190,7 @@ var parse = function (reader, name, types, listener, cache) {
                                     case "f32": case "f64": { result[column[0]] = 0; break; };
                                     case "str": { result[column[0]] = ""; break; };
                                     default: {
-                                        if (column[1].replace(/^#+/, "")[0] === "[") {
+                                        if (columnType.replace(/^#+/, "")[0] === "[") {
                                             result[column[0]] = [];
                                         } else {
                                             result[column[0]] = null;

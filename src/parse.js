@@ -265,7 +265,7 @@ parsers[".gfbmdl"] = function (reader, type) {
 
     var result = gfbin.file(reader, "model", {
         "model": [
-            ["formatVersion", "hex"], // sometimes 1 ??
+            ["empty", "void"],
             ["modelVersion", "hex"],
             ["boundingBox", "[2:[3:f32]]"],
             ["textures", "&[&str]"],
@@ -276,11 +276,11 @@ parsers[".gfbmdl"] = function (reader, type) {
             ["groups", "&[&group]"],
             ["meshes", "&[&mesh]"],
             ["bones", "&[&bone]"],
-            [null, "i32", 64]
+            ["emptyList2", "&[&]"]
         ],
         "bone": [
-            ["name", "str"],
-            [null, "u32", 4],
+            ["empty", "void"],
+            ["name", "&str"],
             ["flag", "u32"],
             ["parent", "i32"],
             [null, "u32", 0],
@@ -295,7 +295,7 @@ parsers[".gfbmdl"] = function (reader, type) {
             // edgeType, edgeID, edgeEnabled, projectionType
             // idEdgeOffset, edgeMapAlphaMask
             // renderLayer
-            ["shader", "shader"],
+            ["empty", "void"],
             ["name", "&str"],
             ["shaderGroup", "&str"],
             [null, "u8", 0],
@@ -316,32 +316,37 @@ parsers[".gfbmdl"] = function (reader, type) {
             [null, "u8"],
             [null, "u8"],
             [null, "u8"],
-            [null, "u32", 4],
+            ["common", "&common"],
         ],
         "switch": [
-            ["name", "str"],
-            ["format", "i32", 4],
+            ["empty", "void"],
+            ["name", "&str"],
             ["value", "u8"]
         ],
         "value": [
-            ["name", "str"],
-            ["format", "i32"], // 4 for i32, 8 for f32 in material, but reverse in shader?
-            ["value", "i32"]
+            ["empty", "void"],
+            ["name", "&str"],
+            ["value", "f32"]
         ],
         "color": [
-            ["name", "str"],
-            ["format", "i32", 4], // 4 for f32, 8 for i32; but no found 8 in models currently
-            ["value", "[3:f32]"] // [3:${if(format == 4, 'f32', 'i32')}]
+            ["empty", "void"],
+            ["name", "&str"],
+            ["value", "[3:f32]"]
         ],
-        "shader": [
-            ["name", "str"],
+        "number": [
+            ["empty", "void"],
+            ["name", "&str"],
+            ["value", "i32"]
+        ],
+        "common": [
+            ["empty", "void"],
             ["switches", "&[&switch]"],
-            ["values", "&[&value]"],
+            ["values", "&[&number]"],
             ["colors", "&[&color]"],
         ],
         "texture": [
-            ["channel", "str"],
-            ["channel2", "&str"], // the same as channel ??
+            ["empty", "void"],
+            ["channel", "&str"], // the same as channel ??
             ["id", "i32"],
             ["mapping", "&texture_mapping"]
         ],
@@ -355,7 +360,7 @@ parsers[".gfbmdl"] = function (reader, type) {
             [null, "i32"], // 0 or 1
             [null, "i32"], // 0 or 1
             ["allzero", "[4:i32]"],
-            [null, "hex", "000000c0"],
+            [null, "f32"], // -2.0
         ],
         "group": [
             ["empty", "void"],
@@ -392,6 +397,18 @@ parsers[".gfbmdl"] = function (reader, type) {
                     delete object.emptyList;
                 }
 
+                if (object.materialNames.join(",") !== object.materialNames2.join(",")) {
+                    @warn("material names 2 in model does not equal mateiral list");
+                } else {
+                    delete object.materialNames2;
+                }
+
+                if (object.emptyList2.length) {
+                    @warn("Unknown empty list 2 in model is not empty");
+                } else {
+                    delete object.emptyList2;
+                }
+
                 object.groups.forEach((group) => {
                     group.name = object.bones[group.bone].name;
                 });
@@ -421,7 +438,24 @@ parsers[".gfbmdl"] = function (reader, type) {
                 break;
             };
 
-            case "shader": {
+            case "bone": {
+
+                if (object.flag !== object.flag2) {
+                    @warn("Flag 2 in bone does not equal to flag");
+                } else {
+                    delete object.flag2;
+                }
+
+                object.animatable = object.flag === 1;
+
+                if ((object.flag === 0) || (object.flag === 1)) {
+                    delete object.flag;
+                }
+
+                break;
+            };
+
+            case "common": {
 
                 var switches = {};
                 object.switches.forEach((value) => {
@@ -431,15 +465,7 @@ parsers[".gfbmdl"] = function (reader, type) {
 
                 var values = {};
                 object.values.forEach((value) => {
-                    // check type for 4 or 8
-                    if (value.format === 4) { // f32
-                        values[value.name] = value.value;
-                        var buffer = Buffer.alloc(4);
-                        buffer.writeInt32LE(value.value, 0);
-                        values[value.name] = buffer.readFloatLE(0);
-                    } else if (value.format === 8) { // i32
-                        values[value.name] = value.value;
-                    }
+                    values[value.name] = value.value;
                 });
                 object.values = values;
 
@@ -454,6 +480,12 @@ parsers[".gfbmdl"] = function (reader, type) {
                 break;
             };
 
+            // case "value": {
+            //     @dump(object);
+            //     reader.snapshot(object.@offset - 32).dump(128);
+            //     break;
+            // };
+
             case "material": {
 
                 var switches = {};
@@ -464,14 +496,7 @@ parsers[".gfbmdl"] = function (reader, type) {
 
                 var values = {};
                 object.values.forEach((value) => {
-                    if (value.format === 8) { // f32
-                        values[value.name] = value.value;
-                        var buffer = Buffer.alloc(4);
-                        buffer.writeInt32LE(value.value, 0);
-                        values[value.name] = buffer.readFloatLE(0);
-                    } else if (value.format === 4) { // i32
-                        values[value.name] = value.value;
-                    }
+                    values[value.name] = value.value ? value.value : 0;
                 });
                 object.values = values;
 
@@ -485,6 +510,9 @@ parsers[".gfbmdl"] = function (reader, type) {
             };
 
             case "mesh": {
+
+                @dump(object);
+                reader.snapshot(object.@offset - 32).dump(128);
 
                 var blobReader = reader.snapshot(object.dataOffset);
 
@@ -608,7 +636,7 @@ parsers[".gfbanim"] = function (reader, type) {
             ["empty", "void"],
             ["config", "&config"],
             ["bones", "&bone_list"],
-            [null, "&t10"],
+            ["materials", "&material_list"],
             ["groups", "&group_list"],
         ],
         "config": [
@@ -644,6 +672,17 @@ parsers[".gfbanim"] = function (reader, type) {
             ["name", "&str"],
             ["flag", "u8"],
             [null, "&t3"],
+        ],
+        "material_list": [
+            ["empty", "void"],
+            ["list", "&[&material]"]
+        ],
+        "material": [
+            ["empty", "void"],
+            [null, "&str"],
+            [null, "&[&t14]"],
+            [null, "&[&t16]"],
+            [null, "&[&t12]"],
         ],
         "t3": [
             ["empty", "void"],
@@ -682,17 +721,6 @@ parsers[".gfbanim"] = function (reader, type) {
             ["data", "[3:f32]"]
         ],
 
-        "t10": [
-            ["empty", "void"],
-            [null, "&[&t11]"]
-        ],
-        "t11": [
-            ["empty", "void"],
-            [null, "&str"],
-            [null, "&[&t14]"],
-            [null, "&[&t16]"],
-            [null, "&[&t12]"],
-        ],
         "t12": [
             ["empty", "void"],
             [null, "&str"],
@@ -734,15 +762,16 @@ parsers[".gfbanim"] = function (reader, type) {
         switch (object.@type) {
 
             case "bone_list":
+            case "material_list":
             case "group_list": {
                 return object.list;
             };
 
             case "group_flag": {
-                if (object["2-unknown"]) {
-                    @dump(object);
-                    reader.snapshot(object.@offset).dump(128);
-                }
+                // if (object["2-unknown"]) {
+                //     @dump(object);
+                //     reader.snapshot(object.@offset).dump(128);
+                // }
                 break;
             };
 

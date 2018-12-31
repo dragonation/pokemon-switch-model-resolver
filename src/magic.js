@@ -50,7 +50,7 @@ var guessFileType = function (reader) {
         default: {
             switch (signature.split(" ")[0]) {
                 case "04000000": { type = ".gfbanim"; break; };
-                case "14000000": { type = ".bin-14-like-animation"; break; };
+                case "14000000": { type = ".gfbanim"; break; };
                 case "18000000": { type = ".gfbsm"; break; };
                 case "20000000": { type = ".gfbmdl"; break; };
                 case "44000000": { type = ".gfbpkm"; break; };

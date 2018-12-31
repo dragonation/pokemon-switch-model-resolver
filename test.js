@@ -33,6 +33,7 @@ try {
                             "folders": folders
                         }) + ";",
                         "console.log(window.gfpak);",
+                        "console.log(window.gfpak.folders[1].filter((x) => x.type === \".gfbmdl\")[0].content);",
                         "    </script>",
                         "</html>"].join("\n"));
 
