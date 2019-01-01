@@ -111,9 +111,22 @@ Reader.prototype.readInt32 = function () {
 
 };
 
+Reader.prototype.readFloat16 = function () {
+
+};
+
 Reader.prototype.readFloat32 = function () {
 
     var result = this.buffer.readFloatLE(this.offset);
+
+    // simplify the float 32 from float 64, make it more accurate
+    var exponential = result.toExponential(7).toLowerCase();
+    result = parseFloat(parseFloat(exponential.split("e")[0]).toFixed(7)) * Math.pow(10, exponential.split("e")[1]);
+
+    // make it human readable, remove epsilons
+    if (Math.abs(result) <= 1000000) {
+        result = parseFloat(result.toFixed(5));
+    }
 
     this.offset += 4;
 
@@ -122,6 +135,10 @@ Reader.prototype.readFloat32 = function () {
 };
 
 Reader.prototype.readBLOB = function (size) {
+
+    if (arguments.length === 0) {
+        size = this.readUInt32();
+    }
 
     var result = this.buffer.slice(this.offset, this.offset + size);
 

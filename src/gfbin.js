@@ -72,6 +72,8 @@ var parse = function (reader, name, types, listener, cache) {
 
         case "str": { return reader.readString(); };
 
+        case "blob": { return reader.readBLOB(); };
+
         default: {
 
             if (name[0] === "[") {
@@ -130,18 +132,19 @@ var parse = function (reader, name, types, listener, cache) {
                 var result = {
                     "@type": name,
                     "@offset": origin,
-                    "@layouts": layouts
+                    "@size": layoutReader.readUInt16(),
+                    "@layouts": layouts,
                 };
 
-                var looper = 2;
+                var looper = 4;
                 while (looper < layoutSize) {
 
-                    var column = type[looper / 2 - 1];
+                    var column = type[looper / 2 - 2];
                     if (!column) {
                         column = [];
                     }
                     if (!column[0]) {
-                        column[0] = ((looper - 2) / 2) + "-unknown";
+                        column[0] = ((looper - 4) / 2) + "-unknown";
                         if (column.length < 3) {
                             @warn("Unknown field " + name + "." + column[0]);
                         }
@@ -157,12 +160,7 @@ var parse = function (reader, name, types, listener, cache) {
                             columnType = @.format(columnType, result, {});
                         }
 
-                        if (columnType && (columnType[0] === "@")) {
-                            result[column[0]] = parse(reader.snapshot(origin + reader.readInt32()), columnType.slice(1), types, listener, cache);
-                        } else {
-                            result[column[0]] = parse(resultReader, columnType, types, listener, cache);
-                        }
-
+                        result[column[0]] = parse(resultReader, columnType, types, listener, cache);
                         if (result[column[0]] === undefined) {
                             delete result[column[0]];
                         }
@@ -193,7 +191,7 @@ var parse = function (reader, name, types, listener, cache) {
                                         if (columnType.replace(/^#+/, "")[0] === "[") {
                                             result[column[0]] = [];
                                         } else {
-                                            result[column[0]] = null;
+                                            delete result[column[0]];
                                         }
                                         break;
                                     }
@@ -212,6 +210,8 @@ var parse = function (reader, name, types, listener, cache) {
                     var result2 = listener(result);
                     if (result2 !== undefined) {
                         result = result2;
+                    } else if (result.@content) {
+                        result = result.@content;
                     }
                 }
 

@@ -1,7 +1,6 @@
 
 var guessFileType = function (reader) {
 
-    // var signature = reader.snapshot().readBLOB(8);
     var signature = Array.prototype.slice.call(reader.snapshot().readBLOB(32), 0).map((x) => ("0" + x.toString(16)).slice(-2)).join("").replace(/[0-9a-f]{8}/g, (x) => " " + x).trim();
 
     var reader = reader.snapshot();

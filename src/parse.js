@@ -1,6 +1,8 @@
 const gfbin = require("./gfbin.js");
 const gfpak = require("./gfpak.js");
 
+const Reader = require("./reader.js");
+
 var parsers = Object.create(null);
 
 var parse = function (reader, type) {
@@ -29,42 +31,10 @@ parsers[".bnsh"] = function (reader, type) {
 
 };
 
-parsers[".bin-14-like-animation"] = function (reader, type) {
-
-    var result = gfbin.file(reader, "animation", {
-        "animation": [
-            ["empty", "void"],
-            [null, "&t0"],
-            [null, "&t1"],
-            [null, "&"],
-            [null, "&"],
-            [null, "&"],
-        ],
-        "t0": [
-            ["empty", "void"],
-            [null, "i32"],
-            [null, "i32"],
-            [null, "i32"],
-        ],
-        "t1": [
-
-        ]
-    }, (object) => {
-
-        // @dump(object);
-
-        // reader.snapshot(object["1-unknown"] - 32).dump(128);
-
-    });
-
-    return result;
-};
-
 parsers[".gfbsm"] = function (reader, type) {
 
     var result = gfbin.file(reader, "animation_logic", {
         "animation_logic": [
-            ["empty", "void"],
             ["parts", "&part_list"],
             [null, "&test4"],
             [null, "i32", 0], // zero
@@ -74,41 +44,33 @@ parsers[".gfbsm"] = function (reader, type) {
             ["animations", "&animation_list"],
         ],
         "animation_list": [
-            ["count", "i32"],
             ["list", "&[&animation_reference]"]
         ],
         "animation_reference": [
-            ["empty", "void"],
             ["name", "&str"],
             ["file", "&str"],
         ],
         "test2": [
-            ["clips", "[&string]"],
             ["intTracks", "&[&int_track]"],
             ["floatTracks", "&[&key_frame]"],
             ["triggers", "&[&string]"],
-            [null, "i32", 4]
+            ["clips", "&[&string]"]
         ],
         "part_list": [
-            ["empty", "void"],
             ["list", "&[&test12]"],
             [null, "i32", 4] // check why 4
         ],
         "test4": [
-            ["tracks", "[&track]"],
-            [null, "i32", 4]
+            ["tracks", "&[&track]"]
         ],
         "state_list": [
-            ["empty", "void"],
             ["list", "&[&state_machine]"]
         ],
         "state_machine": [
-            ["empty", "void"],
             ["name", "&str"],
             ["rootNode", "&state_node"],
         ],
         "state_node": [
-            ["empty", "void"],
             ["path", "&str"],
             ["type", "i32"], // 1: ; 3: wildcard; 4: root
             ["space", "&str"],
@@ -117,7 +79,6 @@ parsers[".gfbsm"] = function (reader, type) {
             ["children", "&[&state_node]"],
         ],
         "next_state": [
-            [null, "i32"],
             ["path", "&str"],
             [null, "i32"],
             [null, "f32"],
@@ -127,37 +88,31 @@ parsers[".gfbsm"] = function (reader, type) {
             [null, "i32"], // 4
         ],
         "state_animation": [
-            ["empty", "void"],
             ["space", "&str"],
             ["name", "&string"],
             [null, "f32"],
         ],
         "test12": [
-            ["empty", "void"],
             ["id", "i32"],
             ["name", "&str"],
             ["objects", "&model_reference"],
         ],
         "model_reference": [
-            ["empty", "void"],
             ["bones", "&string_list"],
             ["meshes", "&mesh_list"],
             [null, "&string_list"],
         ],
         "mesh_list": [
-            ["empty", "void"],
             ["notEmpty", "u8"],
             ["list", "&[&mesh]"],
         ],
         "mesh": [
-            ["empty", "void"],
             ["name", "&str"],
             ["flag", "&byte"],
             ["variants", "&string_list"],
             [null, "&string_list"],
         ],
         "track": [
-            ["empty", "void"],
             ["name", "&str"],
             [null, "i32"],
             [null, "[2:f32]"],
@@ -165,28 +120,23 @@ parsers[".gfbsm"] = function (reader, type) {
             [null, "f32"]
         ],
         "int_track": [
-            ["name", "str"],
             [null, "i32"],
             [null, "i32"],
             [null, "i32"],
         ],
         "key_frame": [
-            ["name", "str"],
             [null, "i32"],
             [null, "i32"],
             [null, "i32"],
         ],
         "string_list": [
-            ["empty", "void"],
             ["notEmpty", "u8"],
             ["list", "&[&string]"],
         ],
         "string": [
-            ["empty", "void"],
             ["content", "&str"],
         ],
         "byte": [
-            ["empty", "void"],
             ["value", "u8"]
         ],
     }, (object) => {
@@ -227,10 +177,10 @@ parsers[".gfbsm"] = function (reader, type) {
 
             case "mesh": {
 
-                if (object["4-unknown"].length) {
-                    @dump(object);
-                    reader.snapshot(Math.max(0, object.@offset - 32)).dump(128);
-                }
+                // if (object["4-unknown"].length) {
+                //     @dump(object);
+                //     reader.snapshot(Math.max(0, object.@offset - 32)).dump(128);
+                // }
                 break;
             };
 
@@ -250,8 +200,9 @@ parsers[".gfbsm"] = function (reader, type) {
 
         }
 
-        delete object.@layouts;
         delete object.@offset;
+        delete object.@size;
+        delete object.@layouts;
 
     });
 
@@ -265,7 +216,6 @@ parsers[".gfbmdl"] = function (reader, type) {
 
     var result = gfbin.file(reader, "model", {
         "model": [
-            ["empty", "void"],
             ["modelVersion", "hex"],
             ["boundingBox", "[2:[3:f32]]"],
             ["textures", "&[&str]"],
@@ -279,7 +229,6 @@ parsers[".gfbmdl"] = function (reader, type) {
             ["emptyList2", "&[&]"]
         ],
         "bone": [
-            ["empty", "void"],
             ["name", "&str"],
             ["flag", "u32"],
             ["parent", "i32"],
@@ -295,7 +244,6 @@ parsers[".gfbmdl"] = function (reader, type) {
             // edgeType, edgeID, edgeEnabled, projectionType
             // idEdgeOffset, edgeMapAlphaMask
             // renderLayer
-            ["empty", "void"],
             ["name", "&str"],
             ["shaderGroup", "&str"],
             [null, "u8", 0],
@@ -319,34 +267,28 @@ parsers[".gfbmdl"] = function (reader, type) {
             ["common", "&common"],
         ],
         "switch": [
-            ["empty", "void"],
             ["name", "&str"],
             ["value", "u8"]
         ],
         "value": [
-            ["empty", "void"],
             ["name", "&str"],
             ["value", "f32"]
         ],
         "color": [
-            ["empty", "void"],
             ["name", "&str"],
             ["value", "[3:f32]"]
         ],
         "number": [
-            ["empty", "void"],
             ["name", "&str"],
             ["value", "i32"]
         ],
         "common": [
-            ["empty", "void"],
             ["switches", "&[&switch]"],
             ["values", "&[&number]"],
             ["colors", "&[&color]"],
         ],
         "texture": [
-            ["empty", "void"],
-            ["channel", "&str"], // the same as channel ??
+            ["channel", "&str"],
             ["id", "i32"],
             ["mapping", "&texture_mapping"]
         ],
@@ -354,7 +296,6 @@ parsers[".gfbmdl"] = function (reader, type) {
             // mappingType, scale, translation, rotation,
             // wrapS, wrapT, magFilter, minFilter
             // minLOD
-            ["empty", "void"],
             [null, "i32"], // 0 or 1
             [null, "i32"], // 0 or 1
             [null, "i32"], // 0 or 1
@@ -363,27 +304,23 @@ parsers[".gfbmdl"] = function (reader, type) {
             [null, "f32"], // -2.0
         ],
         "group": [
-            ["empty", "void"],
-            ["bone", "u32"],
-            ["index", "u32"],
+            ["boneID", "u32"],
+            ["meshID", "u32"],
             ["boundingBox", "[2:[3:f32]]"]
         ],
         "mesh": [
-            ["dataSize", "u32"],
             ["polygons", "&[&mesh_polygon]"],
-            ["alignments", "&[&mesh_alignment]"], // pos | uv | ...
-            ["dataOffset", "&"]
+            ["alignments", "&[&mesh_alignment]"],
+            ["data", "&blob"]
         ],
         "mesh_alignment": [
-            ["empty", "void"],
             ["typeID", "u32"],
             ["formatID", "u32"],
             ["unitCount", "u32"]
         ],
         "mesh_polygon": [
-            ["dataSize", "u32"],
             ["materialID", "u32"],
-            ["dataOffset", "&"]
+            ["data", "&blob"]
         ]
     }, (object) => {
 
@@ -410,7 +347,8 @@ parsers[".gfbmdl"] = function (reader, type) {
                 }
 
                 object.groups.forEach((group) => {
-                    group.name = object.bones[group.bone].name;
+                    group.name = object.bones[group.boneID].name;
+                    object.meshes[group.meshID].name = group.name;
                 });
 
                 object.materials.forEach((material) => {
@@ -421,17 +359,7 @@ parsers[".gfbmdl"] = function (reader, type) {
 
                 object.meshes.forEach((mesh) => {
                     mesh.polygons.forEach((polygon) => {
-
                         polygon.material = object.materials[polygon.materialID].name;
-
-                        polygon.indexSize = 2;
-                        polygon.unitSize = polygon.indexSize * 3;
-                        polygon.unitCount = polygon.dataSize / polygon.unitSize;
-
-                        // TODO: check for geometry shader
-
-                        // @dump(polygon);
-
                     });
                 });
 
@@ -511,15 +439,6 @@ parsers[".gfbmdl"] = function (reader, type) {
 
             case "mesh": {
 
-                @dump(object);
-                reader.snapshot(object.@offset - 32).dump(128);
-
-                var blobReader = reader.snapshot(object.dataOffset);
-
-                if (object.dataSize !== blobReader.readUInt32()) {
-                    throw new Error("Invalid data offset with invalid data size");
-                }
-
                 var offset = 0;
                 object.alignments.forEach((alignment) => {
                     alignment.dataOffset = offset;
@@ -527,22 +446,25 @@ parsers[".gfbmdl"] = function (reader, type) {
                 });
 
                 object.dataStride = offset;
-                object.vertexCount = object.dataSize / object.dataStride;
-
-                object.vertices = blobReader.readBLOB(object.dataSize);
+                object.vertexCount = object.data.length / object.dataStride;
 
                 break;
             };
 
             case "mesh_polygon": {
 
-                var blobReader = reader.snapshot(object.dataOffset);
+                let triangles = object.data.length / 6;
 
-                if (object.dataSize !== blobReader.readUInt32()) {
-                    throw new Error("Invalid data offset with invalid data size");
+                let data = [];
+
+                let dataReader = new Reader(object.data);
+                let looper = 0;
+                while (looper < triangles) {
+                    data.push([dataReader.readUInt16(), dataReader.readUInt16(), dataReader.readUInt16()]);
+                    ++looper;
                 }
 
-                object.triangles = blobReader.readBLOB(object.dataSize);
+                object.data = data;
 
                 break;
             };
@@ -584,8 +506,8 @@ parsers[".gfbmdl"] = function (reader, type) {
                         case 0x06: { return "uv4"; };
                         case 0x07: { return "color1"; };
                         case 0x08: { return "color2"; };
-                        case 0x0b: { return "bone_id"; };
-                        case 0x0c: { return "bone_weight"; };
+                        case 0x0b: { return "boneID"; };
+                        case 0x0c: { return "boneWeight"; };
                         default: { return value; };
                     }
                 };
@@ -620,6 +542,7 @@ parsers[".gfbmdl"] = function (reader, type) {
 
         delete object.@layouts;
         delete object.@offset;
+        delete object.@size;
 
     });
 
@@ -633,63 +556,51 @@ parsers[".gfbanim"] = function (reader, type) {
 
     var result = gfbin.file(reader, "animation", {
         "animation": [
-            ["empty", "void"],
             ["config", "&config"],
             ["bones", "&bone_list"],
             ["materials", "&material_list"],
             ["groups", "&group_list"],
         ],
         "config": [
-            ["empty", "void"],
             [null, "i32", 0],
             ["keyFrames", "i32"],
             ["fps", "i32"],
         ],
         "bone_list": [
-            ["empty", "void"],
             ["list", "&[&bone]"]
         ],
         "group_list": [
-            ["empty", "void"],
             ["list", "&[&group]"],
         ],
         "group": [
-            ["empty", "void"],
             ["name", "&str"],
             ["flag", "u8"], // 1 for normal, 3 for object?
             ["flag2", "&group_flag"]
         ],
         "group_flag": [
-            ["empty", "void"],
             ["flag", "u8"],
         ],
         "t1": [
-            ["empty", "void"],
             [null, "&[&t4]"]
         ],
         "bone": [
-            ["empty", "void"],
             ["name", "&str"],
             ["flag", "u8"],
             [null, "&t3"],
         ],
         "material_list": [
-            ["empty", "void"],
             ["list", "&[&material]"]
         ],
         "material": [
-            ["empty", "void"],
             [null, "&str"],
             [null, "&[&t14]"],
             [null, "&[&t16]"],
             [null, "&[&t12]"],
         ],
         "t3": [
-            ["empty", "void"],
             [null, "u8"],
         ],
         "t4": [
-            ["empty", "void"],
             ["name", "&str"],
             [null, "u8"],
             [null, "&t8"],
@@ -702,58 +613,47 @@ parsers[".gfbanim"] = function (reader, type) {
             [null, "&t18"],
         ],
         "t5": [
-            ["empty", "void"],
             [null, "&[i16]"],
             [null, "&[i16]"],
         ],
         "t6": [
-            ["empty", "void"],
             [null, "[3:f32]"],
             [null, "&[f32]"],
         ],
         "t7": [
-            ["empty", "void"],
             ["data", "[3:i16]"],
             [null, "&[i16]"]
         ],
         "t8": [
-            ["empty", "void"],
             ["data", "[3:f32]"]
         ],
 
         "t12": [
-            ["empty", "void"],
             [null, "&str"],
             [null, "u8"],
             [null, "&t13"],
         ],
         "t13": [
-            ["empty", "void"],
             ["data", "[3:f32]"]
         ],
         "t14": [
-            ["empty", "void"],
             [null, "&str"],
             [null, "u8"],
             [null, "&t15"],
         ],
         "t15": [
-            ["empty", "void"],
             [null, "u8"],
         ],
         "t16": [
-            ["empty", "void"],
             [null, "&str"],
             [null, "u8"],
             [null, "&t17"],
         ],
         "t17": [
-            ["empty", "void"],
             [null], // unknwon i32 or f32
             [null, "&[f32]"]
         ],
         "t18": [
-            ["empty", "void"],
             [null, "&[u16]"],
             [null, "&[u16]"]
         ]
@@ -782,6 +682,7 @@ parsers[".gfbanim"] = function (reader, type) {
         }
 
         delete object.@offset;
+        delete object.@size;
         delete object.@layouts;
 
     });
@@ -793,7 +694,6 @@ parsers[".gfbpkm"] = function (reader, type) {
 
     var result = gfbin.file(reader, "meta", {
         "meta": [
-            ["empty", "void"],
             [null, "i32", 3], // always 3?
             [null, "i32", 0], // 0
             ["pokemonID", "i16"],
@@ -826,21 +726,15 @@ parsers[".gfbpkm"] = function (reader, type) {
             [null, "&t1"],
         ],
         "string": [
-            ["empty", "void"],
-            ["content", "&str"],
+            ["@content", "&str"],
         ],
         "t1": [
-            ["empty", "void"],
             [null, "i32"], // 0
             [null, "&[&]"]
         ]
     }, (object) => {
 
         switch (object.@type) {
-
-            case "string": {
-                return object.content;
-            };
 
             case "meta": {
                 // @dump(object);
@@ -853,10 +747,9 @@ parsers[".gfbpkm"] = function (reader, type) {
             };
         }
 
-        delete object.@layouts;
         delete object.@offset;
-
-        // reader.snapshot(object.@offset).dump();
+        delete object.@size;
+        delete object.@layouts;
 
     });
 
