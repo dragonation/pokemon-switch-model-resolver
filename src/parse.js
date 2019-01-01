@@ -408,12 +408,6 @@ parsers[".gfbmdl"] = function (reader, type) {
                 break;
             };
 
-            // case "value": {
-            //     @dump(object);
-            //     reader.snapshot(object.@offset - 32).dump(128);
-            //     break;
-            // };
-
             case "material": {
 
                 var switches = {};
@@ -447,6 +441,54 @@ parsers[".gfbmdl"] = function (reader, type) {
 
                 object.dataStride = offset;
                 object.vertexCount = object.data.length / object.dataStride;
+
+                object.vertices = [];
+
+                let dataReader = new Reader(object.data);
+
+                let looper = 0;
+                while (looper < object.vertexCount) {
+
+                    let vertex = {};
+
+                    let looper2 = 0;
+                    while (looper2 < object.alignments.length) {
+
+                        let values = [];
+                        let method = null;
+                        let alignment = object.alignments[looper2];
+                        switch (alignment.format) {
+                            case "f32": { method = "readFloat32"; break; };
+                            case "f16": { method = "readFloat16"; break; };
+                            case "u8": { method = "readUInt8"; break; };
+                            case "u16": { method = "readUInt16"; break; };
+                            case "u8_f32": { method = "readUInt8"; break; };
+                            default: { method = "readFloat32"; break; };
+                        }
+
+                        let looper3 = 0;
+                        while (looper3 < alignment.unitCount) {
+                            values.push(dataReader[method]());
+                            ++looper3;
+                        }
+
+                        if (alignment.type === "u8_f32") {
+                            values = values.map((value) => value / 255);
+                        }
+
+                        vertex[alignment.type] = values;
+
+                        ++looper2;
+                    }
+
+                    object.vertices.push(vertex);
+
+                    ++looper;
+                }
+
+                delete object.data;
+                delete object.dataStride;
+                delete object.alignments;
 
                 break;
             };

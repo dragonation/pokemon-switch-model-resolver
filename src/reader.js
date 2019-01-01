@@ -113,6 +113,36 @@ Reader.prototype.readInt32 = function () {
 
 Reader.prototype.readFloat16 = function () {
 
+    // IEEE 754
+    //     1 bit sign
+    //     5 bits exponent
+    //     10 bits fraction
+
+    // Reference
+    //     https://en.wikipedia.org/wiki/Half-precision_floating-point_format
+
+    let u16 = this.readUInt16();
+
+    let sign = (u16 >> 15) ? -1 : 1; // -1 or 1
+    let exponent = (u16 >> 10) & 0x1f; // 5 bits
+    let fraction = u16 & 0x3ff; // 10 bits
+
+    if (exponent === 0) {
+        if (fraction === 0) { // +0 or -0
+            return sign * 0;
+        } else { // subnormal
+            return sign * fraction * Math.pow(2, -24);
+        }
+    } else if ((exponent > 0) && (exponent < 31)) { // normal f16
+        return sign * Math.pow(2, exponent - 15) * (1 + fraction * Math.pow(2, -10));
+    } else if (exponent === 31) {
+        if (fraction === 0) { // Infinity or -Infinity
+            return (sign > 0) ? Infinity : -Infinity;
+        } else { // qNaN or sNaN, but no care what it is
+            return NaN;
+        }
+    }
+
 };
 
 Reader.prototype.readFloat32 = function () {
