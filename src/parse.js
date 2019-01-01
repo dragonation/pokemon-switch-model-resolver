@@ -216,7 +216,7 @@ parsers[".gfbmdl"] = function (reader, type) {
 
     var result = gfbin.file(reader, "model", {
         "model": [
-            ["modelVersion", "hex"],
+            ["version", "hex"],
             ["boundingBox", "[2:[3:f32]]"],
             ["textures", "&[&str]"],
             ["materialNames", "&[&str]"],
@@ -609,10 +609,10 @@ parsers[".gfbanim"] = function (reader, type) {
             ["fps", "i32"],
         ],
         "bone_list": [
-            ["list", "&[&bone]"]
+            ["@content", "&[&bone]"]
         ],
         "group_list": [
-            ["list", "&[&group]"],
+            ["@content", "&[&group]"],
         ],
         "group": [
             ["name", "&str"],
@@ -627,17 +627,34 @@ parsers[".gfbanim"] = function (reader, type) {
         ],
         "bone": [
             ["name", "&str"],
-            ["flag", "u8"],
+            [null, "u8"],
             [null, "&t3"],
+            [null, "u8"],
+            [null, "&t19"],
+            [null, "u8"],
+            [null, "&t20"],
+            [null, "i32", 0],
+            [null, "&t21"],
         ],
         "material_list": [
-            ["list", "&[&material]"]
+            ["@content", "&[&material]"]
         ],
         "material": [
             [null, "&str"],
             [null, "&[&t14]"],
             [null, "&[&t16]"],
             [null, "&[&t12]"],
+        ],
+        "t19": [
+            [null, "u8"], // sometimes not u8?
+        ],
+        "t20": [
+            [null, "[3:f32]"],
+            [null, "&[[3:f32]]"]
+        ],
+        "t21": [
+            [null, "&[u16]"],
+            [null, "&[u16]"],
         ],
         "t3": [
             [null, "u8"],
@@ -703,16 +720,10 @@ parsers[".gfbanim"] = function (reader, type) {
 
         switch (object.@type) {
 
-            case "bone_list":
-            case "material_list":
-            case "group_list": {
-                return object.list;
-            };
-
-            case "group_flag": {
-                // if (object["2-unknown"]) {
-                //     @dump(object);
-                //     reader.snapshot(object.@offset).dump(128);
+            case "t19": {
+                // if (object["1-unknown"]) {
+                    @dump(object);
+                    reader.snapshot(object.@offset).dump(128);
                 // }
                 break;
             };
