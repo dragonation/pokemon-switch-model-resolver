@@ -133,7 +133,7 @@ parsers[".gfbsm"] = function (reader, type) {
         "model_reference": [
             ["bones", "&string_list"],
             ["meshes", "&mesh_list"],
-            [null, "&string_list"],
+            ["polygons", "&string_list"],
         ],
         "mesh_list": [
             ["notEmpty", "u8"],
