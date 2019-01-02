@@ -604,14 +604,46 @@ parsers[".gfbanim"] = function (reader, type) {
             ["bones", "&bone_list"],
             ["materials", "&material_list"],
             ["groups", "&group_list"],
+            ["triggers", "&trigger_list"]
+        ],
+        "trigger_list": [
+            ["@content", "&[&trigger]"]
+        ],
+        "trigger": [
+            ["name", "&str"],
+            ["frameStart", "i32"],
+            ["frameEnd", "i32"],
+            ["parameters", "&[&trigger_parameter]"]
+        ],
+        "trigger_parameter": [
+            ["name", "&str"],
+            ["type", "u8"],
+            ["value", "&trigger_parameter_${type;{1?'number', 2?'value', 3?'switch', 4?'string'}}"]
+        ],
+        "trigger_parameter_number": [
+            ["@content", "i32"]
+        ],
+        "trigger_parameter_value": [
+            ["@content", "f32"]
+        ],
+        "trigger_parameter_switch": [
+            ["@content", "u8"]
+        ],
+        "trigger_parameter_string": [
+            ["@content", "&str"]
         ],
         "config": [
-            [null, "i32"],
+            [null, "i32"], // loopable or autostart ??
             ["keyFrames", "i32"],
             ["fps", "i32"],
         ],
         "bone_list": [
-            ["@content", "&[&bone]"]
+            ["bones", "&[&bone]"],
+            ["defaults", "&bone_defaults"]
+        ],
+        "bone_defaults": [
+            [null, "i32"],
+            ["srt", "[10:f32]"], // scale, rotation(quaternion), transation
         ],
         "group_list": [
             ["@content", "&[&group]"],
@@ -677,16 +709,19 @@ parsers[".gfbanim"] = function (reader, type) {
             ["name", "&str"],
             ["type", "u8"],
             ["value", "&${type;{1?'fixed_vector_track', 2?'dynamic_vector_track', 3?'framed_vector_track'}}"],
+            ["frames", "&frame_ranges"]
         ],
         "switch": [
             ["name", "&str"],
             ["type", "u8"],
-            ["value", "&${type;{1?'fixed_boolean_track', 2?'dynamic_boolean_track', 3?'framed_boolean_track'}}"]
+            ["value", "&${type;{1?'fixed_boolean_track', 2?'dynamic_boolean_track', 3?'framed_boolean_track'}}"],
+            ["frames", "&frame_ranges"]
         ],
         "value": [
             ["name", "&str"],
             ["type", "u8"],
             ["value", "&${type;{1?'fixed_value_track', 2?'dynamic_valule_track', 3?'framed_value_track'}}"],
+            ["frames", "&frame_ranges"]
         ],
         "fixed_value_track": [
             ["value", "f32"],
@@ -699,13 +734,13 @@ parsers[".gfbanim"] = function (reader, type) {
 
         switch (object.@type) {
 
-            case "t13_2": {
-                // if (object.type !== 1) {
-                    @dump(object);
-                    reader.snapshot(object.@offset).dump(128);
-                //
-                break;
-            };
+            // case "animation": {
+                // if (object["1-unknown"]) {
+                    // @dump(object);
+                    // reader.snapshot(object.@offset).dump(128);
+                // }
+                // break;
+            // };
 
             default: {
                 break;

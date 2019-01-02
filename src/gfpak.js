@@ -10,9 +10,7 @@ var parse = function (reader, parse) {
 
     reader = reader.snapshot();
 
-    var result = {
-
-    };
+    var result = {};
 
     var signature = String.fromCharCode.apply(String, reader.readBLOB(8));
     if (signature !== "GFLXPACK") {
@@ -64,10 +62,14 @@ var parse = function (reader, parse) {
         var folder = {
             "hash": reader.readHash64(),
             "fileCount": reader.readUInt32(),
-            "flag": reader.readUInt32(),
+            "padding": reader.readUInt32(),
             "type": "folder",
             "files": []
         };
+
+        if (folder.padding !== 0xcc) {
+            @warn("Incorrect folder padding, expected 0xcc");
+        }
 
         arrangements.push(folder);
 
@@ -77,10 +79,14 @@ var parse = function (reader, parse) {
             var file = {
                 "hash": reader.readHash64(),
                 "index": reader.readUInt32(),
-                "flag": reader.readUInt32(),
+                "padding": reader.readUInt32(),
                 "folder": looper,
                 "type": "file"
             };
+
+            if (file.padding !== 0xcc) {
+                @warn("Incorrect file padding, expected 0xcc");
+            }
 
             fileFolders[file.index] = looper;
 
@@ -103,13 +109,22 @@ var parse = function (reader, parse) {
 
         var file = {
             "folder": fileFolders[looper],
-            "flag": reader.readUInt16(),
+            "hash": hashes[looper],
+            "headerSize": reader.readUInt16(),
             "compressionType": reader.readUInt16(),
             "decompressedSize": reader.readUInt32(),
             "compressedSize": reader.readUInt32(),
             "padding": reader.readUInt32(),
             "bufferOffset": reader.readUInt64(),
         };
+
+        if (file.headerSize !== 9) {
+            @warn("Incorrect file header size, expected 0x0009");
+        }
+
+        if (file.padding !== 0xcc) {
+            @warn("Incorrect file padding, expected 0xcc");
+        }
 
         var fileReader = origin.snapshot(file.bufferOffset);
         file.compressedData = fileReader.readBLOB(file.compressedSize);
@@ -118,12 +133,21 @@ var parse = function (reader, parse) {
             if (lz4(file.compressedData, file.decompressedData) !== file.decompressedSize) {
                 throw new Error("Invalid LZ4 compressed data");
             }
+            delete file.compressedData;
         } else {
             throw new Error("Invalid compression type");
         }
 
         file.type = guessFileType(new Reader(file.decompressedData));
-        file.content = parse(new Reader(file.decompressedData), file.type);
+
+        @info("Parsing file " + file.hash + file.type);
+
+        try {
+            file.content = parse(new Reader(file.decompressedData), file.type);
+        } catch (error) {
+            @error("Failed to parse file " + file.hash + file.type);
+            @error(error);
+        }
 
         result.files.push(file);
 
