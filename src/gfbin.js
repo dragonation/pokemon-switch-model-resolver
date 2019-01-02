@@ -67,6 +67,7 @@ var parse = function (reader, name, types, listener, cache) {
         case "i64": { return reader.readInt64(); };
         case "u64": { return reader.readUInt64(); };
 
+        case "f16": { return reader.readFloat16(); };
         case "f32": { return reader.readFloat32(); };
         case "f64": { return reader.readFloat64(); };
 
@@ -84,6 +85,11 @@ var parse = function (reader, name, types, listener, cache) {
                 }
 
                 var origin = reader.offset;
+
+                // if (element === "u16") {
+                //     @dump(reader.offset);
+                //     @dump(reader.buffer.length);
+                // }
 
                 var count = 0;
                 if (/^[0-9]+:/.test(element)) {
@@ -132,7 +138,7 @@ var parse = function (reader, name, types, listener, cache) {
                 var result = {
                     "@type": name,
                     "@offset": origin,
-                    "@size": layoutReader.readUInt16(),
+                    "@stride": layoutReader.readUInt16(),
                     "@layouts": layouts,
                 };
 
@@ -146,7 +152,7 @@ var parse = function (reader, name, types, listener, cache) {
                     if (!column[0]) {
                         column[0] = ((looper - 4) / 2) + "-unknown";
                         if (column.length < 3) {
-                            @warn("Unknown field " + name + "." + column[0]);
+                            // @warn("Unknown field " + name + "." + column[0]);
                         }
                     }
 

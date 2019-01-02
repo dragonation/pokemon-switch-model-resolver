@@ -201,7 +201,7 @@ parsers[".gfbsm"] = function (reader, type) {
         }
 
         delete object.@offset;
-        delete object.@size;
+        delete object.@stride;
         delete object.@layouts;
 
     });
@@ -584,7 +584,7 @@ parsers[".gfbmdl"] = function (reader, type) {
 
         delete object.@layouts;
         delete object.@offset;
-        delete object.@size;
+        delete object.@stride;
 
     });
 
@@ -604,7 +604,7 @@ parsers[".gfbanim"] = function (reader, type) {
             ["groups", "&group_list"],
         ],
         "config": [
-            [null, "i32", 0],
+            [null, "i32"],
             ["keyFrames", "i32"],
             ["fps", "i32"],
         ],
@@ -614,30 +614,32 @@ parsers[".gfbanim"] = function (reader, type) {
         "group_list": [
             ["@content", "&[&group]"],
         ],
+        "material_list": [
+            ["@content", "&[&material]"]
+        ],
         "group": [
             ["name", "&str"],
-            ["flag", "u8"], // 1 for normal, 3 for object?
-            ["flag2", "&group_flag"]
+            ["flag", "u8"],
+            [null, "&${flag;{1?'group_flag',3?'group_flag_3'}}"]
         ],
         "group_flag": [
-            ["flag", "u8"],
+            [null, "u8"],
         ],
-        "t1": [
-            [null, "&[&t4]"]
+        "group_flag_3": [
+            [null, "&[u16]"],
+            [null, "&[u16]"],
         ],
         "bone": [
             ["name", "&str"],
-            [null, "u8"],
-            [null, "&t3"],
-            [null, "u8"],
-            [null, "&t19"],
-            [null, "u8"],
-            [null, "&t20"],
-            [null, "i32", 0],
+            ["t18_type", "u8"],
+            [null, "&${t18_type;{1?'t18',2?'t18_2',3?'t18_3'}}"],
+            ["t19_type", "u8"],
+            [null, "&${t19_type;{1?'t19',2?'t19_2',3?'t19_3'}}"],
+            ["t20_type", "u8"],
+            [null, "&${t20_type;{1?'t18',2?'t18_2',3?'t18_3'}}"],
             [null, "&t21"],
-        ],
-        "material_list": [
-            ["@content", "&[&material]"]
+            [null, "&t21"],
+            [null, "&t21"],
         ],
         "material": [
             ["name", "&str"],
@@ -645,51 +647,33 @@ parsers[".gfbanim"] = function (reader, type) {
             ["values", "&[&value]"],
             ["colors", "&[&color]"],
         ],
-        "t19": [
-            [null, "u8"], // sometimes not u8?
+        "t18": [
+            [null, "[3:f32]"]
         ],
-        "t20": [
-            [null, "[3:f32]"],
+        "t18_2": [
             [null, "&[[3:f32]]"]
+        ],
+        "t18_3": [
+            [null, "&[u16]"],
+            [null, "&[[3:f32]]"]
+        ],
+        "t19": [
+            [null, "[3:u16]"]
+        ],
+        "t19_2": [
+            [null, "&[[3:u16]]"]
+        ],
+        "t19_3": [
+            [null, "&[u16]"],
+            [null, "&[[3:u16]]"] // maybe we need more solution for f16, see old codes in 3ds
         ],
         "t21": [
             [null, "&[u16]"],
             [null, "&[u16]"],
         ],
-        "t3": [
-            [null, "u8"],
-        ],
-        "t4": [
-            ["name", "&str"],
-            [null, "u8"],
-            [null, "&t8"],
-            [null, "u8"],
-            [null, "&t7"],
-            [null, "u8"],
-            [null, "&t6"],
-            [null, "i32"], // 0
-            [null, "&t5"],
-            [null, "&t18"],
-        ],
-        "t5": [
-            [null, "&[i16]"],
-            [null, "&[i16]"],
-        ],
-        "t6": [
-            [null, "[3:f32]"],
-            [null, "&[f32]"],
-        ],
-        "t7": [
-            ["data", "[3:i16]"],
-            [null, "&[i16]"]
-        ],
-        "t8": [
-            ["data", "[3:f32]"]
-        ],
-
         "color": [
             ["name", "&str"],
-            [null, "u8"],
+            [null, "u8", 1],
             [null, "&t13"],
         ],
         "t13": [
@@ -697,7 +681,7 @@ parsers[".gfbanim"] = function (reader, type) {
         ],
         "switch": [
             ["name", "&str"],
-            [null, "u8"],
+            [null, "u8", 1],
             [null, "&t15"],
         ],
         "t15": [
@@ -705,28 +689,19 @@ parsers[".gfbanim"] = function (reader, type) {
         ],
         "value": [
             ["name", "&str"],
-            [null, "u8"],
-            [null, "&t17"],
+            ["type", "u8"],
+            [null, "&${type;{1?'t17',3?'t17_3'}}"],
         ],
         "t17": [
-            [null], // unknwon i32 or f32
-            [null, "&[f32]"]
+            [null, "f32"],
         ],
-        "t18": [
+        "t17_3": [
             [null, "&[u16]"],
-            [null, "&[u16]"]
+            [null, "&[f32]"],
         ]
     }, (object) => {
 
         switch (object.@type) {
-
-            case "t12": {
-                // if (object["1-unknown"]) {
-                    @dump(object);
-                    reader.snapshot(object.@offset).dump(128);
-                // }
-                break;
-            };
 
             default: {
                 break;
@@ -735,7 +710,7 @@ parsers[".gfbanim"] = function (reader, type) {
         }
 
         delete object.@offset;
-        delete object.@size;
+        delete object.@stride;
         delete object.@layouts;
 
     });
@@ -801,7 +776,7 @@ parsers[".gfbpkm"] = function (reader, type) {
         }
 
         delete object.@offset;
-        delete object.@size;
+        delete object.@stride;
         delete object.@layouts;
 
     });
