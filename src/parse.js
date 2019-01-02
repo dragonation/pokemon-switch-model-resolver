@@ -230,10 +230,10 @@ parsers[".gfbmdl"] = function (reader, type) {
         ],
         "bone": [
             ["name", "&str"],
-            ["flag", "u32"],
+            ["flag", "u32"], // animatable
             ["parent", "i32"],
             [null, "u32", 0],
-            ["flag2", "u8"],  // TODO: the same as flag ??
+            ["flag2", "u8"],  // TODO: the same as flag ?? // value-type
             ["scale", "[3:f32]"],
             ["rotation", "[3:f32]"],
             ["translation", "[3:f32]"],
@@ -320,7 +320,7 @@ parsers[".gfbmdl"] = function (reader, type) {
         ],
         "mesh_polygon": [
             ["materialID", "u32"],
-            ["data", "&blob"]
+            ["data", "&[u16]"]
         ]
     }, (object) => {
 
@@ -495,14 +495,16 @@ parsers[".gfbmdl"] = function (reader, type) {
 
             case "mesh_polygon": {
 
-                let triangles = object.data.length / 6;
+                let triangles = object.data.length / 3;
 
                 let data = [];
 
-                let dataReader = new Reader(object.data);
                 let looper = 0;
                 while (looper < triangles) {
-                    data.push([dataReader.readUInt16(), dataReader.readUInt16(), dataReader.readUInt16()]);
+                    data.push([
+                              object.data[looper * 3],
+                              object.data[looper * 3 + 1],
+                              object.data[looper * 3 + 2]]);
                     ++looper;
                 }
 
@@ -619,89 +621,91 @@ parsers[".gfbanim"] = function (reader, type) {
         ],
         "group": [
             ["name", "&str"],
-            ["flag", "u8"],
-            [null, "&${flag;{1?'group_flag',3?'group_flag_3'}}"]
+            ["visibleType", "u8"],
+            ["visible", "&${visibleType;{1?'fixed_boolean_track',3?'framed_boolean_track'}}"]
         ],
-        "group_flag": [
-            [null, "u8"],
+        "fixed_boolean_track": [
+            ["value", "u8"],
         ],
-        "group_flag_3": [
-            [null, "&[u16]"],
-            [null, "&[u16]"],
+        "framed_boolean_track": [
+            ["frames", "&[u16]"],
+            ["values", "&[u16]"], // bits with value shifting
         ],
         "bone": [
             ["name", "&str"],
-            ["t18_type", "u8"],
-            [null, "&${t18_type;{1?'t18',2?'t18_2',3?'t18_3'}}"],
-            ["t19_type", "u8"],
-            [null, "&${t19_type;{1?'t19',2?'t19_2',3?'t19_3'}}"],
-            ["t20_type", "u8"],
-            [null, "&${t20_type;{1?'t18',2?'t18_2',3?'t18_3'}}"],
-            [null, "&t21"],
-            [null, "&t21"],
-            [null, "&t21"],
+            ["scaleType", "u8"],
+            ["scale", "&${scaleType;{1?'fixed_vector_track',2?'dynamic_vector_track',3?'framed_vector_track'}}"],
+            ["rotationType", "u8"],
+            ["rotation", "&${rotationType;{1?'fixed_quaternion_track', 2?'dynamic_quaternion_track',3?'framed_quaternion_track'}}"],
+            ["translationType", "u8"],
+            ["translation", "&${translationType;{1?'fixed_vector_track',2?'dynamic_vector_track',3?'framed_vector_track'}}"],
+            [null, "&frame_ranges"],
+            [null, "&frame_ranges"],
+            [null, "&frame_ranges"],
         ],
         "material": [
             ["name", "&str"],
             ["switches", "&[&switch]"],
             ["values", "&[&value]"],
-            ["colors", "&[&color]"],
+            ["vectors", "&[&vector]"],
         ],
-        "t18": [
-            [null, "[3:f32]"]
+        "fixed_vector_track": [
+            ["value", "[3:f32]"]
         ],
-        "t18_2": [
-            [null, "&[[3:f32]]"]
+        "dynamic_vector_track": [
+            ["values", "&[[3:f32]]"]
         ],
-        "t18_3": [
+        "framed_vector_track": [
+            ["frames", "&[u16]"],
+            ["values", "&[[3:f32]]"]
+        ],
+        "fixed_quaternion_track": [
+            ["value", "[3:u16]"]
+        ],
+        "dynamic_quaternion_track": [
+            ["values", "&[[3:u16]]"]
+        ],
+        "framed_quaternion_track": [
+            ["frames", "&[u16]"],
+            ["values", "&[[3:u16]]"] // maybe we need more solution for quaternion, see old codes in 3ds, it precalculate the value for accelerations
+        ],
+        "frame_ranges": [
             [null, "&[u16]"],
-            [null, "&[[3:f32]]"]
-        ],
-        "t19": [
-            [null, "[3:u16]"]
-        ],
-        "t19_2": [
-            [null, "&[[3:u16]]"]
-        ],
-        "t19_3": [
-            [null, "&[u16]"],
-            [null, "&[[3:u16]]"] // maybe we need more solution for f16, see old codes in 3ds
-        ],
-        "t21": [
-            [null, "&[u16]"],
             [null, "&[u16]"],
         ],
-        "color": [
+        "vector": [
             ["name", "&str"],
-            [null, "u8", 1],
-            [null, "&t13"],
-        ],
-        "t13": [
-            ["data", "[3:f32]"]
+            ["type", "u8"],
+            ["value", "&${type;{1?'fixed_vector_track', 2?'dynamic_vector_track', 3?'framed_vector_track'}}"],
         ],
         "switch": [
             ["name", "&str"],
-            [null, "u8", 1],
-            [null, "&t15"],
-        ],
-        "t15": [
-            [null, "u8"],
+            ["type", "u8"],
+            ["value", "&${type;{1?'fixed_boolean_track', 2?'dynamic_boolean_track', 3?'framed_boolean_track'}}"]
         ],
         "value": [
             ["name", "&str"],
             ["type", "u8"],
-            [null, "&${type;{1?'t17',3?'t17_3'}}"],
+            ["value", "&${type;{1?'fixed_value_track', 2?'dynamic_valule_track', 3?'framed_value_track'}}"],
         ],
-        "t17": [
-            [null, "f32"],
+        "fixed_value_track": [
+            ["value", "f32"],
         ],
-        "t17_3": [
-            [null, "&[u16]"],
-            [null, "&[f32]"],
+        "framed_value_track": [
+            ["frames", "&[u16]"],
+            ["values", "&[f32]"],
         ]
     }, (object) => {
 
         switch (object.@type) {
+
+            case "t13_2": {
+                // if (object.type !== 1) {
+                    @dump(object);
+                    reader.snapshot(object.@offset).dump(128);
+                //
+                break;
+            };
 
             default: {
                 break;

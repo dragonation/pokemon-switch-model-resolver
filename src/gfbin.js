@@ -152,7 +152,7 @@ var parse = function (reader, name, types, listener, cache) {
                     if (!column[0]) {
                         column[0] = ((looper - 4) / 2) + "-unknown";
                         if (column.length < 3) {
-                            // @warn("Unknown field " + name + "." + column[0]);
+                            @warn("Unknown field " + name + "." + column[0]);
                         }
                     }
 
