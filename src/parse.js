@@ -36,35 +36,50 @@ parsers[".gfbsm"] = function (reader, type) {
     var result = gfbin.file(reader, "animation_logic", {
         "animation_logic": [
             ["parts", "&part_list"],
-            [null, "&test4"],
+            ["floatings", "&floating_list"],
             [null, "i32", 0], // zero
             [null, "i32", 0], // zero
             ["states", "&state_list"],
-            [null, "&test2"],
+            ["initial", "&initial"],
             ["animations", "&animation_list"],
         ],
         "animation_list": [
-            ["list", "&[&animation_reference]"]
+            ["@content", "&[&animation_reference]"]
         ],
         "animation_reference": [
             ["name", "&str"],
             ["file", "&str"],
         ],
-        "test2": [
-            ["intTracks", "&[&int_track]"],
-            ["floatTracks", "&[&key_frame]"],
-            ["triggers", "&[&string]"],
-            ["clips", "&[&string]"]
+        "initial": [
+            ["states", "&[&initial_state]"],
+            ["floatTracks", "&[&initial_value]"],
+            ["variants", "&[&string]"],
+            ["tweens", "&[&string]"]
         ],
         "part_list": [
-            ["list", "&[&test12]"],
-            [null, "i32", 4] // check why 4
+            ["list", "&[&part]"],
+            [null, "&ttt"] // check why 4
         ],
-        "test4": [
-            ["tracks", "&[&track]"]
+        "ttt": [
+            [null, "&ttt1"],
+            [null, "&ttt2"],
+            [null, "&ttt3"],
+        ],
+        "ttt2": [
+            [null, "u8"],
+            [null, "&[&ttt5]"]
+        ],
+        "ttt5": [
+            ["name", "&str"],
+            [null, "&ttt6"],
+            [null, "&ttt7"],
+            [null, "&ttt8"],
+        ],
+        "floating_list": [
+            ["@content", "&[&floating]"]
         ],
         "state_list": [
-            ["list", "&[&state_machine]"]
+            ["@content", "&[&state_machine]"]
         ],
         "state_machine": [
             ["name", "&str"],
@@ -85,14 +100,32 @@ parsers[".gfbsm"] = function (reader, type) {
             [null, "i32"],
             [null, "f32"],
             [null, "i32"],
-            [null, "i32"], // 4
+            ["state_variants", "&[&state_variant]"],
+        ],
+        "state_variant": [
+            ["name", "&str"],
+            [null, "u32"], // frame
+            ["type", "u8"],
+            ["value", "&state_variant_${type;{1?'number', 2?'value', 3?'switch', 4?'switch_2'}}"]
+        ],
+        "state_variant_number": [
+            ["value", "i32"]
+        ],
+        "state_variant_value": [
+            ["value", "f32"]
+        ],
+        "state_variant_switch": [
+            ["value", "u8"]
+        ],
+        "state_variant_switch_2": [
+            ["value", "u8"]
         ],
         "state_animation": [
             ["space", "&str"],
             ["name", "&string"],
             [null, "f32"],
         ],
-        "test12": [
+        "part": [
             ["id", "i32"],
             ["name", "&str"],
             ["objects", "&model_reference"],
@@ -112,51 +145,39 @@ parsers[".gfbsm"] = function (reader, type) {
             ["variants", "&string_list"],
             [null, "&string_list"],
         ],
-        "track": [
+        "floating": [
             ["name", "&str"],
-            [null, "i32"],
-            [null, "[2:f32]"],
-            [null, "[2:f32]"],
-            [null, "f32"]
+            ["type", "i32"],
+            ["rangeX", "[2:f32]"],
+            ["rangeY", "[2:f32]"],
+            ["speed", "f32"]
         ],
-        "int_track": [
-            [null, "i32"],
-            [null, "i32"],
-            [null, "i32"],
+        "initial_state": [
+            ["name", "&str"],
+            [null, "i32", 0],
+            ["value", "i32"],
         ],
-        "key_frame": [
-            [null, "i32"],
-            [null, "i32"],
-            [null, "i32"],
+        "initial_value": [
+            ["name", "&str"],
+            [null, "i32", 0],
+            ["value", "f32"],
         ],
         "string_list": [
             ["notEmpty", "u8"],
             ["list", "&[&string]"],
         ],
         "string": [
-            ["content", "&str"],
+            ["@content", "&str"],
         ],
         "byte": [
-            ["value", "u8"]
+            ["@content", "u8"]
         ],
     }, (object) => {
 
         switch (object.@type) {
 
             case "animation_pack": {
-
-                object.animations = object.animations.list;
-                object.states = object.states.list;
-
                 break;
-            };
-
-            case "byte": {
-                return object.value;
-            };
-
-            case "string": {
-                return object.content;
             };
 
             case "string_list":
@@ -169,30 +190,11 @@ parsers[".gfbsm"] = function (reader, type) {
                 break;
             };
 
-            case "animation_list":
-            case "state_list":
-            case "part_list": {
-                return object.list;
-            };
-
-            case "mesh": {
-
-                // if (object["4-unknown"].length) {
-                //     @dump(object);
-                //     reader.snapshot(Math.max(0, object.@offset - 32)).dump(128);
-                // }
+            case "ttt5": {
+                @dump(object);
+                reader.snapshot(object.@offset).dump(128);
                 break;
             };
-
-            // case "model_reference": {
-
-            //     if (object["3-unknown"].length) {
-            //         @dump(object);
-            //         // reader.snapshot(Math.max(0, object.@offset - 32)).dump(128);
-            //         reader.snapshot(Math.max(0, object["0-unknown"] - 32)).dump(128);
-            //     }
-            //     break;
-            // };
 
             default: {
                 break;
@@ -226,14 +228,20 @@ parsers[".gfbmdl"] = function (reader, type) {
             ["groups", "&[&group]"],
             ["meshes", "&[&mesh]"],
             ["bones", "&[&bone]"],
-            ["emptyList2", "&[&]"]
+            ["renderings", "&[&rendering]"] // rendering layer configuations ??
+        ],
+        "rendering": [
+            [null, "u32"],
+            null,
+            [null, "&[u32]"],
+            [null, "[6:f32]"]
         ],
         "bone": [
             ["name", "&str"],
-            ["flag", "u32"], // animatable
+            [null, "u32"], // animatable, particle ...
             ["parent", "i32"],
             [null, "u32", 0],
-            ["flag2", "u8"],  // TODO: the same as flag ?? // value-type
+            [null, "u8"], // unknown
             ["scale", "[3:f32]"],
             ["rotation", "[3:f32]"],
             ["translation", "[3:f32]"],
@@ -246,7 +254,7 @@ parsers[".gfbmdl"] = function (reader, type) {
             // renderLayer
             ["name", "&str"],
             ["shaderGroup", "&str"],
-            [null, "u8", 0],
+            [null, "i32"], // render layer maybe
             [null, "u8"],
             [null, "u8"],
             ["parameter1", "i32"],
@@ -306,7 +314,8 @@ parsers[".gfbmdl"] = function (reader, type) {
         "group": [
             ["boneID", "u32"],
             ["meshID", "u32"],
-            ["boundingBox", "[2:[3:f32]]"]
+            ["boundingBox", "[2:[3:f32]]"],
+            ["layer", "u32"]
         ],
         "mesh": [
             ["polygons", "&[&mesh_polygon]"],
@@ -340,12 +349,6 @@ parsers[".gfbmdl"] = function (reader, type) {
                     delete object.materialNames2;
                 }
 
-                if (object.emptyList2.length) {
-                    @warn("Unknown empty list 2 in model is not empty");
-                } else {
-                    delete object.emptyList2;
-                }
-
                 object.groups.forEach((group) => {
                     group.name = object.bones[group.boneID].name;
                     object.meshes[group.meshID].name = group.name;
@@ -362,23 +365,6 @@ parsers[".gfbmdl"] = function (reader, type) {
                         polygon.material = object.materials[polygon.materialID].name;
                     });
                 });
-
-                break;
-            };
-
-            case "bone": {
-
-                if (object.flag !== object.flag2) {
-                    @warn("Flag 2 in bone does not equal to flag");
-                } else {
-                    delete object.flag2;
-                }
-
-                object.animatable = object.flag === 1;
-
-                if ((object.flag === 0) || (object.flag === 1)) {
-                    delete object.flag;
-                }
 
                 break;
             };
@@ -501,10 +487,9 @@ parsers[".gfbmdl"] = function (reader, type) {
 
                 let looper = 0;
                 while (looper < triangles) {
-                    data.push([
-                              object.data[looper * 3],
-                              object.data[looper * 3 + 1],
-                              object.data[looper * 3 + 2]]);
+                    data.push([object.data[looper * 3],
+                               object.data[looper * 3 + 1],
+                               object.data[looper * 3 + 2]]);
                     ++looper;
                 }
 
@@ -720,11 +705,14 @@ parsers[".gfbanim"] = function (reader, type) {
         "value": [
             ["name", "&str"],
             ["type", "u8"],
-            ["value", "&${type;{1?'fixed_value_track', 2?'dynamic_valule_track', 3?'framed_value_track'}}"],
+            ["value", "&${type;{1?'fixed_value_track', 2?'dynamic_value_track', 3?'framed_value_track'}}"],
             ["frames", "&frame_ranges"]
         ],
         "fixed_value_track": [
             ["value", "f32"],
+        ],
+        "dynamic_value_track": [
+            ["values", "&[f32]"]
         ],
         "framed_value_track": [
             ["frames", "&[u16]"],
@@ -734,7 +722,7 @@ parsers[".gfbanim"] = function (reader, type) {
 
         switch (object.@type) {
 
-            // case "animation": {
+            // case "dynamic_value_track": {
                 // if (object["1-unknown"]) {
                     // @dump(object);
                     // reader.snapshot(object.@offset).dump(128);
@@ -761,8 +749,8 @@ parsers[".gfbpkm"] = function (reader, type) {
 
     var result = gfbin.file(reader, "meta", {
         "meta": [
-            [null, "i32", 3], // always 3?
-            [null, "i32", 0], // 0
+            [null, "i32", 3],
+            [null, "i32", 0],
             ["pokemonID", "i16"],
             ["pokemonModelType", "i16"],
             [null, "&[&]"], // 80, 84,
@@ -778,18 +766,18 @@ parsers[".gfbpkm"] = function (reader, type) {
             ["maxX", "f32"],
             ["maxY", "f32"],
             ["maxZ", "f32"],
-            ["cameraX", "f32"], // -18
+            ["cameraX", "f32"],
             ["cameraY", "f32"],
             ["cameraZ", "f32"],
             ["centerY", "f32"],
             ["elevationMin", "f32"],
-            ["elevationMax", "f32"], // -23
-            [null, "i32"], // 0
-            [null, "i8"], // -25 // 0 or 50
+            ["elevationMax", "f32"],
+            [null, "i32", 0],
             [null, "i8"], // 0 or 50
-            [null, "i32"], // 0
-            [null, "i32"], // 0
-            [null, "&[&string]"],
+            [null, "i8"], // 0 or 50
+            [null, "i32", 0],
+            [null, "i32", 0],
+            [null, "&[&string]"], // mesh names like 3ds, but no found definitions
             [null, "&t1"],
         ],
         "string": [
@@ -803,11 +791,11 @@ parsers[".gfbpkm"] = function (reader, type) {
 
         switch (object.@type) {
 
-            case "meta": {
-                // @dump(object);
-                // reader.snapshot(object.@offset).dump();
-                break;
-            };
+            // case "meta": {
+            //     @dump(object);
+            //     reader.snapshot(object.@offset).dump();
+            //     break;
+            // };
 
             default: {
                 break;
