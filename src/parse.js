@@ -640,10 +640,10 @@ parsers[".gfbanim"] = function (reader, type) {
             ["@content", "&[&material]"]
         ],
         "material": [
-            [null, "&str"],
-            [null, "&[&t14]"],
-            [null, "&[&t16]"],
-            [null, "&[&t12]"],
+            ["name", "&str"],
+            ["switches", "&[&switch]"],
+            ["values", "&[&value]"],
+            ["colors", "&[&color]"],
         ],
         "t19": [
             [null, "u8"], // sometimes not u8?
@@ -687,24 +687,24 @@ parsers[".gfbanim"] = function (reader, type) {
             ["data", "[3:f32]"]
         ],
 
-        "t12": [
-            [null, "&str"],
+        "color": [
+            ["name", "&str"],
             [null, "u8"],
             [null, "&t13"],
         ],
         "t13": [
             ["data", "[3:f32]"]
         ],
-        "t14": [
-            [null, "&str"],
+        "switch": [
+            ["name", "&str"],
             [null, "u8"],
             [null, "&t15"],
         ],
         "t15": [
             [null, "u8"],
         ],
-        "t16": [
-            [null, "&str"],
+        "value": [
+            ["name", "&str"],
             [null, "u8"],
             [null, "&t17"],
         ],
@@ -720,7 +720,7 @@ parsers[".gfbanim"] = function (reader, type) {
 
         switch (object.@type) {
 
-            case "t19": {
+            case "t12": {
                 // if (object["1-unknown"]) {
                     @dump(object);
                     reader.snapshot(object.@offset).dump(128);
