@@ -127,21 +127,37 @@ Reader.prototype.readFloat16 = function () {
     let exponent = (u16 >> 10) & 0x1f; // 5 bits
     let fraction = u16 & 0x3ff; // 10 bits
 
+    let result = 0;
     if (exponent === 0) {
         if (fraction === 0) { // +0 or -0
-            return sign * 0;
+            result = sign * 0;
         } else { // subnormal
-            return sign * fraction * Math.pow(2, -24);
+            result = sign * fraction * Math.pow(2, -24);
         }
     } else if ((exponent > 0) && (exponent < 31)) { // normal f16
-        return sign * Math.pow(2, exponent - 15) * (1 + fraction * Math.pow(2, -10));
+        result = sign * Math.pow(2, exponent - 15) * (1 + fraction * Math.pow(2, -10));
     } else if (exponent === 31) {
         if (fraction === 0) { // Infinity or -Infinity
-            return (sign > 0) ? Infinity : -Infinity;
+            result = (sign > 0) ? Infinity : -Infinity;
         } else { // qNaN or sNaN, but no care what it is
-            return NaN;
+            result = NaN;
         }
     }
+
+    if (isFinite(result)) {
+
+        // simplify the float 16 from float 64, make it more accurate
+        var exponential = result.toExponential(6).toLowerCase();
+        result = parseFloat(parseFloat(exponential.split("e")[0]).toFixed(5)) * Math.pow(10, exponential.split("e")[1]);
+
+        // make it human readable, remove epsilons
+        if (Math.abs(result) <= 1000000) {
+            result = parseFloat(result.toFixed(4));
+        }
+
+    }
+
+    return result;
 
 };
 
