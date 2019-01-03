@@ -31,6 +31,28 @@ parsers[".bntx"] = function (reader, type) {
 
 parsers[".bnsh"] = function (reader, type) {
 
+    var result = {};
+
+    @dump(reader.buffer.length);
+    if (reader.readString(4) !== "BNSH") {
+        throw new Error("Invalid BNSH magic header");
+    }
+
+    if (reader.readUInt32() !== 0) {
+        throw new Error("Expected 0, but not found");
+    }
+
+    result.hash = [reader.readUInt32(), reader.readUInt32()];
+
+    let nameOffset = reader.readUInt32();
+    let nameReader = reader.snapshot(nameOffset - 2);
+    result.name = nameReader.readString(nameReader.readUInt16());
+
+    @dump(result);
+    reader.dump(128);
+
+    return result;
+
 };
 
 parsers[".gfbanmcfg"] = function (reader, type) {
@@ -239,7 +261,7 @@ parsers[".gfbmdl"] = function (reader, type) {
             ["textures", "&[&str]"],
             ["shaders", "&[&str]"],
             ["emptyList", "&[&]"], // always zero length ??
-            ["materialNames", "&[&str]"], // TODO: the same as materialNames ??
+            ["materialNames", "&[&str]"],
             ["materials", "&[&material]"],
             ["groups", "&[&group]"],
             ["meshes", "&[&mesh]"],
@@ -585,8 +607,6 @@ parsers[".gfbmdl"] = function (reader, type) {
 
     });
 
-    // @dump(result);
-
     return result;
 
 };
@@ -732,14 +752,6 @@ parsers[".gfbanm"] = function (reader, type) {
 
         switch (object.@type) {
 
-            // case "dynamic_value_track": {
-                // if (object["1-unknown"]) {
-                    // @dump(object);
-                    // reader.snapshot(object.@offset).dump(128);
-                // }
-                // break;
-            // };
-
             default: {
                 break;
             };
@@ -753,6 +765,7 @@ parsers[".gfbanm"] = function (reader, type) {
     });
 
     return result;
+
 };
 
 parsers[".gfbpokecfg"] = function (reader, type) {
@@ -819,6 +832,7 @@ parsers[".gfbpokecfg"] = function (reader, type) {
     });
 
     return result;
+
 };
 
 parsers[".gfbpmcatalog"] = function (reader, type) {
@@ -856,6 +870,7 @@ parsers[".gfbpmcatalog"] = function (reader, type) {
     });
 
     return result;
+
 };
 
 module.exports = parse;

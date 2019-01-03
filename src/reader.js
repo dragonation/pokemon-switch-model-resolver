@@ -287,12 +287,14 @@ Reader.prototype.dump = function (count) {
                 return ("       " + line[i * 4]).slice(-4) + ("       " + line[i * 4 + 2]).slice(-4);
             } else {
                 var buffer = Buffer.from(line.slice(i * 4, i * 4 + 4));
-                var float = buffer.readFloatLE(0);
-                if (isNaN(float)) {
-                    var int = buffer.readInt32LE(0);
-                    return ("       " + int).slice(-8);
-                } else if ((float + "").indexOf("e") === -1) {
-                    return ("       " + float.toFixed(3)).slice(-8);
+                if (buffer.length >= 4) {
+                    var float = buffer.readFloatLE(0);
+                    if (isNaN(float)) {
+                        var int = buffer.readInt32LE(0);
+                        return ("       " + int).slice(-8);
+                    } else if ((float + "").indexOf("e") === -1) {
+                        return ("       " + float.toFixed(3)).slice(-8);
+                    }
                 }
                 return "        ";
             }
@@ -302,7 +304,7 @@ Reader.prototype.dump = function (count) {
     });
 
     var lines = [
-        "             0x00      0x04      0x08      0x0c      0x10      0x14      0x18      0x1c"
+        "         0x00      0x04      0x08      0x0c      0x10      0x14      0x18      0x1c      :" + offset
     ];
 
     result.forEach((line, index) => {
