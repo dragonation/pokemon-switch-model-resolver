@@ -31,6 +31,11 @@ parsers[".bntx"] = function (reader, type) {
 
 parsers[".bnsh"] = function (reader, type) {
 
+    const readString = function (offset) {
+        let newReader = reader.snapshot(offset - 2);
+        return newReader.readString(newReader.readUInt16());
+    };
+
     var result = {};
 
     @dump(reader.buffer.length);
@@ -42,11 +47,19 @@ parsers[".bnsh"] = function (reader, type) {
         throw new Error("Expected 0, but not found");
     }
 
-    result.hash = [reader.readUInt32(), reader.readUInt32()];
+    result.hash = [reader.readUInt32(), reader.readUInt32()]; // not seems hash
+    result.name = readString(reader.readUInt32());
 
-    let nameOffset = reader.readUInt32();
-    let nameReader = reader.snapshot(nameOffset - 2);
-    result.name = nameReader.readString(nameReader.readUInt16());
+    if (reader.readUInt16() !== 0) {
+        throw new Error("Expected 0, but not found");
+    }
+
+    var offset = reader.readUInt16();
+
+    var offset2 = reader.readUInt32(); // unknown, hash like
+    result.hash2 = reader.snapshot(offset2).readUInt32();
+
+    result.length = reader.readUInt32();
 
     @dump(result);
     reader.dump(128);
