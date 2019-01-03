@@ -48,11 +48,11 @@ var guessFileType = function (reader) {
         case "AAMP": { type = ".aamp"; break; };
         default: {
             switch (signature.split(" ")[0]) {
-                case "04000000": { type = ".gfbanim"; break; };
-                case "14000000": { type = ".gfbanim"; break; };
-                case "18000000": { type = ".gfbsm"; break; };
+                case "04000000": { type = ".gfbanm"; break; };
+                case "14000000": { type = ".gfbanm"; break; };
+                case "18000000": { type = ".gfbanmcfg"; break; };
                 case "20000000": { type = ".gfbmdl"; break; };
-                case "44000000": { type = ".gfbpkm"; break; };
+                case "44000000": { type = ".gfbpokecfg"; break; };
                 default: {
                     break;
                 };

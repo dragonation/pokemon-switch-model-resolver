@@ -1,6 +1,8 @@
 const gfbin = require("./gfbin.js");
 const gfpak = require("./gfpak.js");
 
+const fnv1a64 = require("./fnv1a64.js");
+
 const Reader = require("./reader.js");
 
 var parsers = Object.create(null);
@@ -31,7 +33,7 @@ parsers[".bnsh"] = function (reader, type) {
 
 };
 
-parsers[".gfbsm"] = function (reader, type) {
+parsers[".gfbanmcfg"] = function (reader, type) {
 
     var result = gfbin.file(reader, "animation_logic", {
         "animation_logic": [
@@ -52,28 +54,29 @@ parsers[".gfbsm"] = function (reader, type) {
         ],
         "initial": [
             ["states", "&[&initial_state]"],
-            ["floatTracks", "&[&initial_value]"],
+            ["values", "&[&initial_value]"],
             ["variants", "&[&string]"],
             ["tweens", "&[&string]"]
         ],
         "part_list": [
             ["list", "&[&part]"],
-            [null, "&ttt"] // check why 4
+            ["affectings", "&affectings"]
         ],
-        "ttt": [
-            [null, "&ttt1"],
-            [null, "&ttt2"],
-            [null, "&ttt3"],
+        "empty": [],
+        "affectings": [
+            ["empty", "&empty"],
+            ["parts", "&affecting_part_list"],
+            ["empty2", "&empty"],
         ],
-        "ttt2": [
-            [null, "u8"],
-            [null, "&[&ttt5]"]
+        "affecting_part_list": [
+            ["notEmpty", "u8"], 
+            ["list", "&[&affecting_part]"]
         ],
-        "ttt5": [
+        "affecting_part": [
             ["name", "&str"],
-            [null, "&ttt6"],
-            [null, "&ttt7"],
-            [null, "&ttt8"],
+            ["empty", "&empty"],
+            ["variants", "&string_list"],
+            ["empty2", "&empty"],
         ],
         "floating_list": [
             ["@content", "&[&floating]"]
@@ -180,19 +183,32 @@ parsers[".gfbsm"] = function (reader, type) {
                 break;
             };
 
+            case "affectings": 
+            case "affecting_part": {
+
+                if (Object.keys(object.empty).length === 1) {
+                    delete object.empty;
+                } else {
+                    @warn("Non empty empty object found in affectings");
+                }
+
+                if (Object.keys(object.empty2).length === 1) {
+                    delete object.empty2;
+                } else {
+                    @warn("Non empty empty object found in affectings");
+                }
+
+                break;
+            }
+
             case "string_list":
-            case "mesh_list": {
+            case "mesh_list": 
+            case "affecting_part_list": {
                 if (object.notEmpty && object.list) {
                     return object.list;
                 } else {
                     return [];
                 }
-                break;
-            };
-
-            case "ttt5": {
-                @dump(object);
-                reader.snapshot(object.@offset).dump(128);
                 break;
             };
 
@@ -221,9 +237,9 @@ parsers[".gfbmdl"] = function (reader, type) {
             ["version", "hex"],
             ["boundingBox", "[2:[3:f32]]"],
             ["textures", "&[&str]"],
-            ["materialNames", "&[&str]"],
+            ["shaders", "&[&str]"],
             ["emptyList", "&[&]"], // always zero length ??
-            ["materialNames2", "&[&str]"], // TODO: the same as materialNames ??
+            ["materialNames", "&[&str]"], // TODO: the same as materialNames ??
             ["materials", "&[&material]"],
             ["groups", "&[&group]"],
             ["meshes", "&[&mesh]"],
@@ -341,12 +357,6 @@ parsers[".gfbmdl"] = function (reader, type) {
                     @warn("Unknown empty list in model is not empty");
                 } else {
                     delete object.emptyList;
-                }
-
-                if (object.materialNames.join(",") !== object.materialNames2.join(",")) {
-                    @warn("material names 2 in model does not equal mateiral list");
-                } else {
-                    delete object.materialNames2;
                 }
 
                 object.groups.forEach((group) => {
@@ -581,7 +591,7 @@ parsers[".gfbmdl"] = function (reader, type) {
 
 };
 
-parsers[".gfbanim"] = function (reader, type) {
+parsers[".gfbanm"] = function (reader, type) {
 
     var result = gfbin.file(reader, "animation", {
         "animation": [
@@ -745,7 +755,7 @@ parsers[".gfbanim"] = function (reader, type) {
     return result;
 };
 
-parsers[".gfbpkm"] = function (reader, type) {
+parsers[".gfbpokecfg"] = function (reader, type) {
 
     var result = gfbin.file(reader, "meta", {
         "meta": [
@@ -797,6 +807,43 @@ parsers[".gfbpkm"] = function (reader, type) {
             //     break;
             // };
 
+            default: {
+                break;
+            };
+        }
+
+        delete object.@offset;
+        delete object.@stride;
+        delete object.@layouts;
+
+    });
+
+    return result;
+};
+
+parsers[".gfbpmcatalog"] = function (reader, type) {
+
+    var result = gfbin.file(reader, "catalog", {
+        "catalog": [
+            ["@content", "&[&model]"]
+        ],
+        "model": [
+            ["pokemonID", "u16"], 
+            ["isSpecial", "u16"],
+            ["isFemale", "u8"],
+            ["isRare", "u8"],
+            ["modelPath", "&str"],
+            ["configPath", "&str"],
+            ["packageFile", "&str"],
+            ["animations", "&[&animation]"]
+        ],
+        "animation": [
+            ["type", "&str"],
+            ["configPath", "&str"],
+        ]
+    }, (object) => {
+
+        switch (object.@type) {
             default: {
                 break;
             };

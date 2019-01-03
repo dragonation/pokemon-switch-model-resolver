@@ -18,6 +18,7 @@ var parse = function (reader, parse) {
     }
 
     result.signature = signature;
+    result.folders = [];
     result.version = reader.readUInt32();
     result.padding = reader.readUInt32();
     result.layouts = {
@@ -66,6 +67,8 @@ var parse = function (reader, parse) {
             "type": "folder",
             "files": []
         };
+
+        result.folders.push(folder);
 
         if (folder.padding !== 0xcc) {
             @warn("Incorrect folder padding, expected 0xcc");
