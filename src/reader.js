@@ -309,8 +309,12 @@ Reader.prototype.dump = function (count) {
 
     result.forEach((line, index) => {
         lines.push("0x" + ("000" + (index * 32 + offset).toString(16)).slice(-4) + ": " + line.hex + " :" + (index * 32 + 32 + offset));
-        lines.push("     a  " + line.asc);
-        lines.push("     v  " + line.guess);
+        if (line.asc.trim() && (line.asc.replace(/\s+/g, (s) => s.slice(0, -1)).split(/\s+/).filter((s) => s.length > 2).length > 0)) {
+            lines.push("     a  " + line.asc);
+        }
+        if (line.guess.trim() && (line.guess.split(/\s+/).join("") !== "00000000")) {
+            lines.push("     v  " + line.guess);
+        }
     });
 
     var content = lines.join("\n") + "\n";
