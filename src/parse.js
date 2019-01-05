@@ -31,38 +31,65 @@ parsers[".bntx"] = function (reader, type) {
 
 parsers[".bnsh"] = function (reader, type) {
 
-    const readString = function (offset) {
-        let newReader = reader.snapshot(offset - 2);
-        return newReader.readString(newReader.readUInt16());
-    };
-
     var result = {};
 
-    @dump(reader.buffer.length);
     if (reader.readString(4) !== "BNSH") {
         throw new Error("Invalid BNSH magic header");
     }
 
     if (reader.readUInt32() !== 0) {
-        throw new Error("Expected 0, but not found");
+        throw new Error("Expected 0, but not Size ");
     }
 
-    result.hash = [reader.readUInt32(), reader.readUInt32()]; // not seems hash
-    result.name = readString(reader.readUInt32());
+    result.unknown = [reader.readInt16(), reader.readInt16(), reader.readInt16(), reader.readInt16()]; // not seems hash
 
-    if (reader.readUInt16() !== 0) {
-        throw new Error("Expected 0, but not found");
+    {   let nameReader = reader.snapshot(reader.readUInt32() - 2);
+        result.name = nameReader.readString(nameReader.readUInt16()); }
+
+    let headerOffset = reader.readUInt16();
+    let bodyOffset = reader.readUInt16();
+    let rltOffset = reader.readUInt32();
+    let rltEnd = reader.readUInt32();
+
+    // header ended, read rlt (something like file layout?)
+
+    {   let rltReader = reader.snapshot(rltOffset);
+        if (rltReader.readString(4) !== "_RLT") {
+            throw new Error("Invlid RLT section magic header");
+        }
+        if (rltOffset !== rltReader.readUInt32()) {
+            throw new Error("RLT section offset not correct");
+        }
+        let sections = rltReader.readUInt64(); // why 64 bit?
+        if (rltReader.readUInt64() !== 0) {
+            throw new Error("Unknown padding not zero");
+        }
+        result.sections = [];
+        let looper = 0;
+        while (looper < sections) {
+            let section = {
+                "offset": rltReader.readUInt32(),
+                "length": rltReader.readUInt32(),
+                "objects": rltReader.readUInt32(),
+                "headerSize": rltReader.readUInt32() * 8,
+                "flag": [rltReader.readUInt16(), rltReader.readUInt16(), rltReader.readUInt16(), rltReader.readUInt16()]
+            };
+            result.sections.push(section);
+            ++looper;
+        }
+
+        result.offsets = []; // according to data, there are 3 groups
+        while (rltReader.offset < rltReader.buffer.length) {
+            result.offsets.push({
+                "offset": rltReader.readUInt32(),
+                "flag": rltReader.readUInt16(),
+                "flag2": rltReader.readUInt16()
+            });
+        }
+
     }
-
-    var offset = reader.readUInt16();
-
-    var offset2 = reader.readUInt32(); // unknown, hash like
-    result.hash2 = reader.snapshot(offset2).readUInt32();
-
-    result.length = reader.readUInt32();
 
     @dump(result);
-    reader.dump(128);
 
     return result;
 
@@ -104,7 +131,7 @@ parsers[".gfbanmcfg"] = function (reader, type) {
             ["empty2", "&empty"],
         ],
         "affecting_part_list": [
-            ["notEmpty", "u8"], 
+            ["notEmpty", "u8"],
             ["list", "&[&affecting_part]"]
         ],
         "affecting_part": [
@@ -218,7 +245,7 @@ parsers[".gfbanmcfg"] = function (reader, type) {
                 break;
             };
 
-            case "affectings": 
+            case "affectings":
             case "affecting_part": {
 
                 if (Object.keys(object.empty).length === 1) {
@@ -237,7 +264,7 @@ parsers[".gfbanmcfg"] = function (reader, type) {
             }
 
             case "string_list":
-            case "mesh_list": 
+            case "mesh_list":
             case "affecting_part_list": {
                 if (object.notEmpty && object.list) {
                     return object.list;
@@ -855,7 +882,7 @@ parsers[".gfbpmcatalog"] = function (reader, type) {
             ["@content", "&[&model]"]
         ],
         "model": [
-            ["pokemonID", "u16"], 
+            ["pokemonID", "u16"],
             ["isSpecial", "u16"],
             ["isFemale", "u8"],
             ["isRare", "u8"],
