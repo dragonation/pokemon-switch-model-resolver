@@ -1,0 +1,324 @@
+!!NVfp5.0
+OPTION NV_gpu_program_fp64;
+OPTION NV_bindless_texture;
+OPTION NV_shader_atomic_float;
+OPTION ARB_draw_buffers;
+# cgc version 3.4.0001, build date Jul  2 2014
+# command line args:
+#vendor NVIDIA Corporation
+#version 3.4.0.1
+#profile gp5fp
+#program main
+#semantic PerFrame : BUFFER[0]
+#semantic ForwardLights : BUFFER[1]
+#semantic JointPalette
+#semantic JointInstanceTexture
+#semantic ModelArray
+#semantic LightShadowTexture
+#semantic GlobalBackLightColor
+#semantic GlobalLightColor
+#semantic GlobalAmbientLightColor
+#semantic GlobalLightDir
+#semantic GlobalBackLightOffset
+#semantic Model
+#semantic InvModel
+#semantic EmitterTransform
+#semantic OcclusionConstants
+#semantic RenderTargetDimensions
+#semantic RepeatIndex
+#semantic MatDiffuse
+#semantic MatEmissiveIntensity
+#semantic MatSpecularIntensity
+#semantic AlphaSensitivity
+#semantic AlphaBlendFactor
+#semantic LightMapIntensity
+#semantic FresnelPower
+#semantic FresnelStrength
+#semantic ObjectId
+#semantic TessellationFactor
+#semantic MaxDistance
+#semantic MinDistance
+#semantic HeightScale
+#semantic SceneScale
+#semantic AnimationDirection
+#semantic AnimationAngle
+#semantic Time
+#semantic Random
+#semantic AnimationLinearSpeed
+#semantic AnimationAngularSpeed
+#semantic NumXTiles
+#semantic NumYTiles
+#semantic WindWaveSize
+#semantic WindSpeed
+#semantic WindDirection
+#semantic WindIntensity
+#semantic WindForce
+#semantic ViewMatrixArray
+#semantic DiffuseMap
+#semantic DisplacementMap
+#semantic SpecularMap
+#semantic EmissiveMap
+#semantic NormalMap
+#semantic RoughnessMap
+#semantic EnvironmentMap
+#semantic calcColor
+#semantic calcBump
+#semantic calcSpec
+#semantic calcDepth
+#semantic calcEnv
+#var float4x4 View : BUFFER[0] : buffer[0][0], 4 : -1 : 0
+#var float4x4 InvView : BUFFER[0] : buffer[0][64], 4 : -1 : 1
+#var float4x4 ViewProjection : BUFFER[0] : buffer[0][128], 4 : -1 : 0
+#var float4x4 Projection : BUFFER[0] : buffer[0][192], 4 : -1 : 0
+#var float4x4 InvProjection : BUFFER[0] : buffer[0][256], 4 : -1 : 0
+#var float4x4 InvViewProjection : BUFFER[0] : buffer[0][320], 4 : -1 : 0
+#var float4 EyePos : BUFFER[0] : buffer[0][384] : -1 : 1
+#var float4 FocalLength : BUFFER[0] : buffer[0][400] : -1 : 0
+#var float4x4 LightProjTransformArray[0] :  : buffer[1][0], 4 : -1 : 0
+#var float4 LightPositionsArray[0] :  : buffer[1][64] : -1 : 0
+#var float4 LightColorArray[0] :  : buffer[1][80] : -1 : 0
+#var float4 LightProjMapOffsetArray[0] :  : buffer[1][96] : -1 : 0
+#var float4 LightShadowMapOffsetArray[0] :  : buffer[1][112] : -1 : 0
+#var float4 LightShadowSizeArray[0] :  : buffer[1][128] : -1 : 0
+#var int NumActiveLights : BUFFER[1] : buffer[1][144] : -1 : 0
+#var float LightInvRangeArray[0] :  : buffer[1][148] : -1 : 0
+#var int LightTypeArray[0] :  : buffer[1][152] : -1 : 0
+#var bool LightCastsShadowsArray[0] :  : buffer[1][156] : -1 : 0
+#var float4x4 JointPalette[0] :  : , 4 : -1 : 0
+#var ulong JointInstanceTexture :  :  : -1 : 0
+#var float4x4 ModelArray[0] :  : , 4 : -1 : 0
+#var ulong LightShadowTexture :  :  : -1 : 0
+#var float4 GlobalBackLightColor :  :  : -1 : 0
+#var float4 GlobalLightColor :  :  : -1 : 0
+#var float4 GlobalAmbientLightColor :  :  : -1 : 0
+#var float4 GlobalLightDir :  :  : -1 : 0
+#var float GlobalBackLightOffset :  :  : -1 : 0
+#var float4x4 Model :  : , 4 : -1 : 0
+#var float4x4 InvModel :  : , 4 : -1 : 0
+#var float4x4 EmitterTransform :  : , 4 : -1 : 0
+#var float4 OcclusionConstants :  :  : -1 : 0
+#var float4 RenderTargetDimensions :  :  : -1 : 0
+#var int RepeatIndex :  :  : -1 : 0
+#var float4 MatDiffuse :  :  : -1 : 0
+#var float MatEmissiveIntensity :  :  : -1 : 0
+#var float MatSpecularIntensity :  : c[0] : -1 : 1
+#var float AlphaSensitivity :  :  : -1 : 0
+#var float AlphaBlendFactor :  : c[1] : -1 : 1
+#var float LightMapIntensity :  :  : -1 : 0
+#var float FresnelPower :  :  : -1 : 0
+#var float FresnelStrength :  :  : -1 : 0
+#var int ObjectId :  :  : -1 : 0
+#var float TessellationFactor :  :  : -1 : 0
+#var float MaxDistance :  :  : -1 : 0
+#var float MinDistance :  :  : -1 : 0
+#var float HeightScale :  :  : -1 : 0
+#var float SceneScale :  :  : -1 : 0
+#var float2 AnimationDirection :  :  : -1 : 0
+#var float AnimationAngle :  :  : -1 : 0
+#var float Time :  :  : -1 : 0
+#var float Random :  :  : -1 : 0
+#var float AnimationLinearSpeed :  :  : -1 : 0
+#var float AnimationAngularSpeed :  :  : -1 : 0
+#var int NumXTiles :  :  : -1 : 0
+#var int NumYTiles :  :  : -1 : 0
+#var float WindWaveSize :  :  : -1 : 0
+#var float WindSpeed :  :  : -1 : 0
+#var float4 WindDirection :  :  : -1 : 0
+#var float WindIntensity :  :  : -1 : 0
+#var float WindForce :  :  : -1 : 0
+#var float4x4 ViewMatrixArray[0] :  : , 4 : -1 : 0
+#var ulong DiffuseMap :  : c[2] : -1 : 1
+#var ulong DisplacementMap :  :  : -1 : 0
+#var ulong SpecularMap :  : c[3] : -1 : 1
+#var ulong EmissiveMap :  :  : -1 : 0
+#var ulong NormalMap :  : c[4] : -1 : 1
+#var ulong RoughnessMap :  : c[5] : -1 : 1
+#var ulong EnvironmentMap :  : c[6] : -1 : 1
+#function 5 EnvironmentMapColor(4) () -> ()
+#function 6 AlphaColorMultiply(5) () -> ()
+#function 7 AlphaColor(6) () -> ()
+#function 8 SimpleColorMultiply(7) () -> ()
+#function 9 SimpleColor(8) () -> ()
+#subroutine 0 calcColor CalculateColor
+#function 1 FlatNormalFunctor(0) () -> ()
+#function 2 NormalMapFunctor(1) () -> ()
+#subroutine 1 calcBump CalculateBump
+#function 10 ReflectiveSpecularFunctor(9) () -> ()
+#function 11 NonReflectiveSpecularFunctor(10) () -> ()
+#subroutine 2 calcSpec CalculateSpecular
+#function 12 ViewSpaceDepthFunctor(11) () -> ()
+#subroutine 3 calcDepth CalculateDepth
+#function 3 NoEnvironment(2) () -> ()
+#function 4 EnvironmentPBR(3) () -> ()
+#subroutine 4 calcEnv CalculateEnvironment
+#var float3 ViewSpacePos : $vin.ATTR0 : ATTR0 : -1 : 1
+#var float3 Tangent : $vin.ATTR1 : ATTR1 : -1 : 1
+#var float3 Normal : $vin.ATTR2 : ATTR2 : -1 : 1
+#var float3 Binormal : $vin.ATTR3 : ATTR3 : -1 : 1
+#var float2 UV : $vin.ATTR4 : ATTR4 : -1 : 1
+#var float4 Albedo : $vout.COL0 : COL0[0] : -1 : 1
+#var float4 Normals : $vout.COL1 : COL1[1] : -1 : 1
+#var float Depth : $vout.COL2 : COL2[2] : -1 : 1
+#var float4 Specular : $vout.COL3 : COL3[3] : -1 : 1
+#var float4 Unshaded : $vout.COL4 : COL4[4] : -1 : 1
+PARAM c[7] = { program.local[0..6] };
+CBUFFER buf0[] = { program.buffer[0] };
+CBUFFER buf1[] = { program.buffer[1] };
+ATTRIB fragment_attrib[] = { fragment.attrib[0..4] };
+TEMP R0, R1, R2, R3, R4, R5, R6, R7, R8, R9;
+LONG TEMP D0, D1;
+OUTPUT result_color0 = result.color;
+OUTPUT result_color3 = result.color[3];
+OUTPUT result_color4 = result.color[4];
+OUTPUT result_color2 = result.color[2];
+OUTPUT result_color1 = result.color[1];
+SUBROUTINETYPE I0 { BB19, BB21, BB23, BB25, BB27 };
+SUBROUTINE I0 program_subroutine_0 = program.subroutine[0];
+SUBROUTINETYPE I1 { BB11, BB13 };
+SUBROUTINE I1 program_subroutine_1 = program.subroutine[1];
+SUBROUTINETYPE I2 { BB29, BB31 };
+SUBROUTINE I2 program_subroutine_2 = program.subroutine[2];
+SUBROUTINETYPE I3 { BB33 };
+SUBROUTINE I3 program_subroutine_3 = program.subroutine[3];
+SUBROUTINETYPE I4 { BB15, BB17 };
+SUBROUTINE I4 program_subroutine_4 = program.subroutine[4];
+PK64.U D0.x, c[2];
+PK64.U D1.x, c[3];
+TEX.F R0, fragment.attrib[4], handle(D0.x), 2D;
+TEX.F R1.xyz, fragment.attrib[4], handle(D1.x), 2D;
+PK64.U D1.x, c[4];
+PK64.U D0.x, c[5];
+MOV.F R2.xyz, fragment.attrib[1];
+MOV.F R3.xyz, fragment.attrib[3];
+MOV.F R4.xyz, fragment.attrib[2];
+TEX.F R5.yw, fragment.attrib[4], handle(D1.x), 2D;
+TEX.F R5.x, fragment.attrib[4], handle(D0.x), 2D;
+CALI  program_subroutine_1;
+MOV.F R3.xyz, R1;
+MOV.F R1.w, R5.x;
+MOV.F R2.xyz, R4;
+MOV.F R6.xyz, fragment.attrib[0];
+LDC.F32X4 R7.xyz, buf0[384];
+PK64.U D0.x, c[6];
+MOV.F R8.x, buf0[64];
+MOV.F R9.x, buf0[80];
+MOV.F R8.w, buf0[96].x;
+MOV.F R9.w, buf0[112].x;
+CALI  program_subroutine_4;
+MOV.F R3, {1, 0, 0, 0}.x;
+MOV.F R2.w, R5.x;
+MOV.F R4.xyz, R6;
+MOV.F R1.w, c[1].x;
+CALI  program_subroutine_0;
+MOV.F result_color0, R0;
+MOV.F R3.xyz, R1;
+MOV.F R0.w, R5.x;
+MOV.F R1.xyz, R4;
+MOV.F R0.x, c[0];
+CALI  program_subroutine_2;
+MOV.F result_color3, R0;
+MOV.F result_color4, {0, 1, 0, 0}.xxxy;
+MOV.F R0.xyz, fragment.attrib[0];
+CALI  program_subroutine_3;
+DP3.F R0.x, R2, R2;
+RSQ.F R0.x, R0.x;
+MUL.F R1.xyz, R0.x, R2;
+ADD.F R0.x, R1.z, {1, 0, 0, 0};
+DIV.F R0.xy, R1, R0.x;
+MAD.F R0.zw, R0.xyxy, {0.28126231, 0.5, 0, 0}.x, {0.28126231, 0.5, 0, 0}.y;
+MAD.F R0.x, R0.w, {0.5, 0, 0, 0}, {0.5, 0, 0, 0};
+MUL.F R0.y, R0.x, {255.99609, 0, 0, 0}.x;
+MAD.F R0.x, R0.z, {0.5, 0, 0, 0}, {0.5, 0, 0, 0};
+FLR.F R0.z, R0.y;
+FRC.F result_color1.w, R0.y;
+MUL.F R0.y, R0.x, {255.99609, 0, 0, 0}.x;
+FLR.F R0.x, R0.y;
+MUL.F result_color1.x, R0, {0.00390625, 0, 0, 0};
+MUL.F result_color1.z, R0, {0.00390625, 0, 0, 0}.x;
+FRC.F result_color1.y, R0;
+MOV.F result_color2.x, R1.w;
+RET   (TR);
+BB11 SUBROUTINENUM(0):
+RET   (TR);
+BB13 SUBROUTINENUM(1):
+MAD.F R5.zw, R5.xywy, {2, -1, 0, 0}.x, {2, -1, 0, 0}.y;
+DP3.F R1.w, R3, R3;
+RSQ.F R1.w, R1.w;
+MUL.F R3.xyz, R1.w, R3;
+DP3.F R1.w, R2, R2;
+RSQ.F R1.w, R1.w;
+MUL.F R2.xyz, R1.w, R2;
+MUL.F R3.xyz, R5.w, R3;
+DP3.F R1.w, R4, R4;
+DP2.F R2.w, R5.zwzw, R5.zwzw;
+ADD.F R2.w, -R2, {1, 0, 0, 0}.x;
+RSQ.F R2.w, R2.w;
+MAD.F R2.xyz, R5.z, R2, R3;
+RSQ.F R1.w, R1.w;
+RCP.F.SAT R2.w, R2.w;
+MUL.F R3.xyz, R1.w, R4;
+MAD.F R4.xyz, R2.w, R3, R2;
+RET   (TR);
+BB15 SUBROUTINENUM(2):
+MOV.F R6.xyz, {1, 0, 0, 0}.x;
+RET   (TR);
+BB17 SUBROUTINENUM(3):
+MUL.F R5.yzw, R9.xxyz, R6.y;
+MAD.F R5.yzw, R8.xxyz, R6.x, R5;
+MAD.F R5.yzw, R8.xwyz, R6.z, R5;
+ADD.F R5.yzw, R5, R9.xwyz;
+ADD.F R7.xyz, R7, -R5.yzww;
+DP3.F R2.w, R7, R7;
+RSQ.F R2.w, R2.w;
+MUL.F R7.xyz, R2.w, R7;
+MUL.F R9.xyz, R4.y, R9;
+MAD.F R9.xyz, R4.x, R8, R9;
+DP3.F R2.w, R6, R6;
+MAD.F R8.xyz, R4.z, R8.wyzw, R9;
+RSQ.F R2.w, R2.w;
+MUL.F R6.xyz, R2.w, R6;
+ADD.F R8.xyz, R8, {0, 0, 0, 0}.x;
+DP3.F R2.w, R4, R6;
+DP3.F R3.w, R8, -R7;
+MUL.F R4.xyz, R8, R3.w;
+ADD.F R3.w, -R2, {1, 0, 0, 0}.x;
+MAD.F R6.xyz, -R4, {2, 0, 0, 0}.x, -R7;
+MAD.F R2.w, -R1, {3, 4, 0, 0}.x, {3, 4, 0, 0}.y;
+POW.F R3.w, R3.w, {5, 0, 0, 0}.x;
+DIV.F R2.w, R3, R2.w;
+MAD.F R4.xyz, -R3, R2.w, R2.w;
+ADD.F.SAT R3.xyz, R3, R4;
+MAD.F R6.w, -R1, {9, 0, 0, 0}.x, {9, 0, 0, 0}.x;
+TXL.F R4.xyz, R6, handle(D0.x), CUBE;
+MUL.F R6.xyz, R4, R3;
+RET   (TR);
+BB19 SUBROUTINENUM(4):
+MAD.F R3.xyz, R6, R2.w, -R2.w;
+MAD.F R0.xyz, R3, R0, R0;
+RET   (TR);
+BB21 SUBROUTINENUM(5):
+MUL.F R0, R0, R3;
+MUL.F R0, R0, R1.w;
+RET   (TR);
+BB23 SUBROUTINENUM(6):
+MUL.F R0, R0, R1.w;
+RET   (TR);
+BB25 SUBROUTINENUM(7):
+MUL.F R0, R0, R3;
+RET   (TR);
+BB27 SUBROUTINENUM(8):
+RET   (TR);
+BB29 SUBROUTINENUM(9):
+MUL.F R0.xyz, R3, R0.x;
+MUL.F R0.xyz, R0, R1;
+RET   (TR);
+BB31 SUBROUTINENUM(10):
+MUL.F R0.xyz, R3, R0.x;
+RET   (TR);
+BB33 SUBROUTINENUM(11):
+DP3.F R0.x, R0, R0;
+RSQ.F R0.x, R0.x;
+RCP.F R1.w, R0.x;
+RET   (TR);
+END
+# 126 instructions, 10 R-regs, 2 D-regs
