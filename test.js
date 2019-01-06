@@ -14,9 +14,7 @@ try {
     return;
 }
 
-var filePath = @.fs.resolvePath(__dirname, "romfs/bin/archive/pokemon/pm0004_00.gfpak");
-
-// var filePath = @.fs.resolvePath(__dirname, "sample/pm0001_00.gfpak");
+var filePath = @.fs.resolvePath(__dirname, "romfs/bin/archive/pokemon/pm0005_00.gfpak");
 
 try {
 

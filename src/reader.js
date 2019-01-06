@@ -14,6 +14,117 @@ Reader.prototype.snapshot = function (offset) {
 
 };
 
+Reader.prototype.guess = function () {
+
+    if (this.offset + 4 >= this.buffer.length) { return { "info": "almost closed" }; }
+
+    let result = {
+        "i8": this.snapshot().readInt8(),
+        "i16": this.snapshot().readInt16(),
+        "i32": this.snapshot().readInt32(),
+        "f32": this.snapshot().readFloat32(),
+        "h32": this.snapshot().readHash32(),
+        "h64": this.snapshot().readHash64(),
+        "str": this.snapshot().readAutostring(20)
+    };
+
+    if (result.i32 === 0) { return { "i32": 0 }; }
+
+    const guess = (key) => {
+
+        if (!result[key]) { return; }
+        if (result[key] + this.offset + 4 >= this.buffer.length) { return; }
+
+        result["i8@" + key] = this.snapshot(result[key] + this.offset).readInt8();
+        result["i16@" + key] = this.snapshot(result[key] + this.offset).readInt16();
+        result["i32@" + key] = this.snapshot(result[key] + this.offset).readInt32();
+        result["f32@" + key] = this.snapshot(result[key] + this.offset).readFloat32();
+
+        result["h32@" + key] = this.snapshot(result[key] + this.offset).readHash32();
+        result["h64@" + key] = this.snapshot(result[key] + this.offset).readHash64();
+
+        result["str@" + key] = this.snapshot(result[key] + this.offset).readAutostring(20);
+
+        if (result["i8@" + key] === result["i16@" + key]) { delete result["i8@" + key]; }
+        if (result["i16@" + key] === result["i32@" + key]) { delete result["i16@" + key]; }
+
+        if (result["i32@" + key] === 0) { delete result["f32@" + key]; }
+        else if (!isFinite(result["f32@" + key])) { delete result["f32@" + key]; }
+        else if (Math.abs(result["f32@" + key]) < 0.000001) { delete result["f32@" + key]; }
+        else if (Math.abs(result["f32@" + key]) > 10000000) { delete result["f32@" + key]; }
+
+        if (result["f32@" + key]) { delete result["h32@" + key]; delete result["h64@" + key]; }
+        else if (result["h64@" + key].split("0").length >= 4) { delete result["h64@" + key]; }
+
+        if (result["h32@" + key] && (result["h32@" + key].split("0").length >= 3)) { delete result["h32@" + key]; }
+
+        ["i8", "i16", "i32"].forEach((key2, index) => {
+            if (result[key2 + "@" + key] && (this.offset + result[key2 + "@" + key] + (1 << index) + 4 <= this.buffer.length)) {
+                let string = this.snapshot(this.offset + result[key2 + "@" + key] + (1 << index)).readString(Math.min(32, result[key]));
+                if (/^[0-9a-z`~!@#$%\^&\*\(\)\-=_\+\{\}\\\|\[\];':"\,\.\/<>\? \r\n]+$/.test(string)) {
+                    if (string.length > 29) {
+                        string = string.slice(0, 29) + "...";
+                    }
+                    result[key2 + "str@" + key] = string;
+                }
+            }
+        });
+
+        if ((result["str@" + key].length <= 3) ||
+            (!/^[0-9a-z`~!@#$%\^&\*\(\)\-=_\+\{\}\\\|\[\];':"\,\.\/<>\? \r\n]+$/.test(result["str@" + key]))) {
+            delete result["str@" + key];
+        }
+
+    };
+
+    if (result.i16 === result.i32) {
+        delete result.i8;
+        delete result.i16;
+    } else {
+        if (result.i8 === result.i16) {
+            delete result.i8;
+        } else {
+            guess("i8");
+        }
+        guess("i16");
+    }
+    if (Math.abs(result.i32) >= 10000000) {
+        delete result.i32;
+    } else {
+        guess("i32");
+    }
+
+    if (result.i32 === 0) { delete result.f32; }
+    else if (!isFinite(result.f32)) { delete result.f32; }
+    else if (Math.abs(result.f32) < 0.000001) { delete result.f32; }
+    else if (Math.abs(result.f32) > 10000000) { delete result.f32; }
+
+    if (result.f32) { delete result.h32; delete result.h64; }
+    else if (result.h64.split("0").length >= 4) { delete result.h64; }
+
+    if (result.h32 && (result.h32.split("0").length >= 3)) { delete result.h32; }
+
+    if ((result.str.length <= 3) ||
+        (!/^[0-9a-z`~!@#$%\^&\*\(\)\-=_\+\{\}\\\|\[\];':"\,\.\/<>\? \r\n]+$/.test(result.str))) {
+        delete result.str;
+    }
+
+    ["i8", "i16", "i32"].forEach((key, index) => {
+        if (result[key] && (this.offset + (1 << index) + 4 <= this.buffer.length)) {
+            let string = this.snapshot(this.offset + (1 << index)).readString(Math.min(32, result[key]));
+            if (/^[0-9a-z`~!@#$%\^&\*\(\)\-=_\+\{\}\\\|\[\];':"\,\.\/<>\? \r\n]+$/.test(string)) {
+                if (string.length > 29) {
+                    string = string.slice(0, 29) + "...";
+                }
+                result[key + "str"] = string;
+            }
+        }
+    });
+
+    return result;
+
+};
+
 Reader.prototype.readInt64 = function () {
 
     var result = this.buffer.readInt32LE(this.offset) | (this.buffer.readInt32LE(this.offset + 4) << 32);
@@ -40,6 +151,12 @@ Reader.prototype.readUInt64As32x2 = function () {
     this.offset += 8;
 
     return [low, high];
+
+};
+
+Reader.prototype.readHash32 = function () {
+
+    return ("00000000" + this.readUInt32().toString(16)).slice(-8);
 
 };
 
@@ -209,13 +326,28 @@ Reader.prototype.readString = function () {
 
     var chars = [];
     var looper = 0;
-    while (looper < length) {
+    while ((looper < length) && (this.offset >= 0) && (this.offset < this.buffer.length)) {
         chars.push(this.readUInt8());
         ++looper;
     }
 
     while (chars[chars.length - 1] === 0) {
         chars.pop();
+    }
+
+    return String.fromCharCode.apply(String, chars);
+
+};
+
+Reader.prototype.readAutostring = function (length) {
+
+    var chars = [];
+    var looper = 0;
+    while ((looper < length) && (this.offset >= 0) && (this.offset < this.buffer.length)) {
+        let char = this.readUInt8();
+        if (char === 0) { break; }
+        chars.push(char);
+        ++looper;
     }
 
     return String.fromCharCode.apply(String, chars);
@@ -317,7 +449,7 @@ Reader.prototype.dump = function (count) {
         }
     });
 
-    var content = lines.join("\n") + "\n";
+    var content = "Guess content: " + @.jsonize(this.snapshot().guess()) + "\n" + lines.join("\n") + "\n";
 
     @warn(content);
 

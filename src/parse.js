@@ -38,20 +38,35 @@ parsers[".bnsh"] = function (reader, type) {
     }
 
     if (reader.readUInt32() !== 0) {
-        throw new Error("Expected 0, but not Size ");
+        throw new Error("Expected 0, but not found");
     }
 
-    result.unknown = [reader.readInt16(), reader.readInt16(), reader.readInt16(), reader.readInt16()]; // not seems hash
+    result.version = ("00000000" + reader.readUInt32().toString(16)).slice(-8);
+    result.endian = reader.readUInt16();
+    switch (result.endian) {
+        case 0xfeff: { result.endian = "le"; break; };
+        case 0xfffe: { result.endian = "be"; break; };
+        default: { throw new Error("Invalid endian in bnsh"); };
+    }
+
+    if (result.endian !== "le") {
+        throw new Error("Indian not correct for switch devices, expected LE");
+    }
+
+    let offsetsLength = reader.readUInt16();
 
     {   let nameReader = reader.snapshot(reader.readUInt32() - 2);
         result.name = nameReader.readString(nameReader.readUInt16()); }
 
     let headerOffset = reader.readUInt16();
+    if (headerOffset !== 0) { throw new Error("Header offset not zero"); }
+
     let bodyOffset = reader.readUInt16();
+
     let rltOffset = reader.readUInt32();
     let rltEnd = reader.readUInt32();
 
-    // header ended, read rlt (something like file layout?)
+    // header ended, read rlt (something like real layout?)
 
     {   let rltReader = reader.snapshot(rltOffset);
         if (rltReader.readString(4) !== "_RLT") {
@@ -70,15 +85,24 @@ parsers[".bnsh"] = function (reader, type) {
             let section = {
                 "offset": rltReader.readUInt32(),
                 "length": rltReader.readUInt32(),
-                "objects": rltReader.readUInt32(),
-                "headerSize": rltReader.readUInt32() * 8,
-                "flag": [rltReader.readUInt16(), rltReader.readUInt16(), rltReader.readUInt16(), rltReader.readUInt16()]
+                "unknown": rltReader.readUInt32(),
+                "unknown2": rltReader.readUInt32(),
+                "flag": [rltReader.readUInt16(), rltReader.readUInt16(), rltReader.readUInt16(), rltReader.readUInt16()],
+                "type": "unknown"
             };
+            // there are 3 unknown section, last 2 seems always zero length
+            let magic = reader.snapshot(section.offset).readUInt32().toString(16);
+            switch (magic) {
+                case "12345678": { section.type = "binary"; break; };
+                case "5254535f": { section.type = "string"; break; };
+                case "48534e42": { section.type = "bnsh"; break; };
+                default: { break; };
+            }
             result.sections.push(section);
             ++looper;
         }
 
-        result.offsets = []; // according to data, there are 3 groups
+        result.offsets = []; // according to data, there are 3 groups, but no more info
         while (rltReader.offset < rltReader.buffer.length) {
             result.offsets.push({
                 "offset": rltReader.readUInt32(),
@@ -87,9 +111,49 @@ parsers[".bnsh"] = function (reader, type) {
             });
         }
 
+        if (result.offsets.length !== offsetsLength) {
+            throw new Error("Offset length not correct");
+        }
+
     }
 
-    @dump(result);
+    let bodyReader = reader.snapshot(bodyOffset);
+
+    let bodyMagic = bodyReader.readString(4);
+    if (bodyMagic !== "grsc") {
+        throw new Error("Invalid body magic, expected grsc");
+    }
+
+    let bodyLength = bodyReader.readUInt32();
+    let bodyPaddedLength = bodyReader.readUInt32();
+
+    result.dumpOffset = bodyReader.offset;
+    var dumppeds = [];
+    while (bodyReader.offset !== 2664) {
+        let u32 = bodyReader.readUInt32();
+        if (!parsers[".bnsh"].dumppeds) {
+            parsers[".bnsh"].dumppeds = [];
+        }
+        if (!parsers[".bnsh"].dumppeds[dumppeds.length]) {
+            parsers[".bnsh"].dumppeds[dumppeds.length] = [];
+        }
+        if (parsers[".bnsh"].dumppeds[dumppeds.length].indexOf(u32) === -1) {
+            parsers[".bnsh"].dumppeds[dumppeds.length].push(u32);
+        }
+        // from 108
+        // 7, 63, 81, 83, 84, 93, 101, 115, 117, 553, 555, 557, 558, 607, 615, 619,
+        // 39, 47 -> 0 or 416
+        // 556, 560, 562, 570,
+        // 622, 623, 624
+        // 609 ->614
+        dumppeds.push(u32);
+    }
+
+    // @dump(result);
+
+    result.assembly = bodyReader.readAutostring(65536);
+
+    result.diff = parsers[".bnsh"].dumppeds;
 
     return result;
 
