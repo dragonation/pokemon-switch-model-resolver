@@ -29,10 +29,13 @@ parsers[".gfpak"] = function (reader) {
 
 parsers[".bntx"] = function (reader, type) {
 
+    return bntx(reader);
+
 };
 
 parsers[".bnsh"] = function (reader, type) {
 
+    return;
     var result = {};
 
     if (reader.readString(4) !== "BNSH") {

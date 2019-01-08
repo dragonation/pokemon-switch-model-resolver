@@ -341,6 +341,10 @@ Reader.prototype.readString = function () {
 
 Reader.prototype.readAutostring = function (length) {
 
+    if (!length) {
+        length = Infinity;
+    }
+
     var chars = [];
     var looper = 0;
     while ((looper < length) && (this.offset >= 0) && (this.offset < this.buffer.length)) {
@@ -452,6 +456,8 @@ Reader.prototype.dump = function (count) {
     var content = "Guess content: " + @.jsonize(this.snapshot().guess()) + "\n" + lines.join("\n") + "\n";
 
     @warn(content);
+
+    return this;
 
 };
 
