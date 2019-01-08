@@ -35,7 +35,8 @@ parsers[".bntx"] = function (reader, type) {
 
 parsers[".bnsh"] = function (reader, type) {
 
-    return;
+    return bnsh(reader);
+
     var result = {};
 
     if (reader.readString(4) !== "BNSH") {

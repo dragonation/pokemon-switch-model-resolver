@@ -200,7 +200,6 @@ var parse = function (reader) {
         let nameReader = reader.snapshot(texture.nameOffset);
         texture.name = nameReader.readString(nameReader.readUInt16());
 
-
         let mipReader = reader.snapshot(texture.dataOffset);
         baseOffset = mipReader.readInt64();
         texture.mipOffsets = [baseOffset];
@@ -211,7 +210,7 @@ var parse = function (reader) {
             ++looper2;
         }
 
-        texture.data = reader.snapshot(texture.dataOffset).readBLOB(texture.dataLength);
+        texture.data = reader.snapshot(texture.mipOffsets[0]).readBLOB(texture.dataLength);
 
         if (texture.reversed !== 0) {
             throw new Error("Unknown reversed data, expected 0");

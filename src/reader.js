@@ -367,6 +367,21 @@ Reader.prototype.skipPadding = function (base, value) {
         }
     }
 
+    return this;
+};
+
+Reader.prototype.skip = function (count, value) {
+
+    var looper = 0;
+    while (looper < count) {
+        let newValue = this.readUInt8();
+        if ((arguments.length > 1) && (newValue !== value)) {
+            throw new Error("Invalid skipping, expected 0x" + value.toString(16));
+        }
+        ++looper;
+    }
+
+    return this;
 };
 
 Reader.prototype.dump = function (count) {
