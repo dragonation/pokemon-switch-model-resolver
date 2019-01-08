@@ -1,6 +1,6 @@
 !!NVvp5.0
 OPTION NV_bindless_texture;
- CBUFFER buf0[] = { program.buffer[0] };
+CBUFFER buf0[] = { program.buffer[0] };
 CBUFFER buf1[] = { program.buffer[1] };
 ATTRIB vertex_attrib[] = { vertex.attrib[0..12] };
 OUTPUT result_attrib[] = { result.attrib[0..6] };

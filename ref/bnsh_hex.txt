@@ -624,69 +624,68 @@
 5208, 3, 257
 
 
-in-pos         1 4 1 --> f3
-in-map         0 1 3 --> tex
-bone-i         1 2 3 --> f4
-bone-w         2 0 4 --> i4
+in-pos         1 4 1 --> f3               0
+in-map         0 1 3 --> tex              3
+bone-i         1 2 3 --> f4              11
+bone-w         2 0 4 --> i4              12
 
-o-wld-pos      1 0 3 --> f3
-out-map        0 1 2 --> tex
-gl-pos        64 1 3 --> f3
+o-wld-pos      1 0 3 --> f3                -1
+out-map        0 1 2 --> tex               -1
+gl-pos        64 1 3 --> f3                -1
 
-join           0 2 1
-wld-mtx        2 0 2 --> mtx
+join           0 2 1                     0
+wld-mtx        2 0 2 --> mtx             1
 
 
 
 body.bnsh_fsh
 
 24596 -1 2
-24614 4 0 1 out-mtx-row-0
-24904 0 3 6 out-mtx-row-1
-24858 1 4 5 out-mtx-row-2
-24844 2 1 4 out-norm
-24872 2 3 5 out-wld-pos
-24892 8 6 2 out-map-1
+24614 4 0 1 out-mtx-row-0               -1
+24904 0 3 6 out-mtx-row-1               -1
+24858 1 4 5 out-mtx-row-2               -1
+24844 2 1 4 out-norm                    -1
+24872 2 3 5 out-wld-pos                 -1
+24892 8 6 2 out-map-1                   -1
 
 24596 -1 1
-24600 4 0 1 out-color-0
+24600 4 0 1 out-color-0                 0
 
 24596 -1 1
-24696 3 0 5 amb-tex
-24628 26 8 6 col-0-tex
-24650 32 7 3 col-sdw-0-tex
-24710 32 1 4  lit-tbl-tex
-24736 24 2 5 em-mask-tex
-24722 27 4 6 eff-tex
-24638 56 2 7 ly-col-0-tex
-24664 30 3 9 norm-map-tex
-24680 48 8 9 sph-map-tex
+24696 3 0 5 amb-tex                     4
+24628 26 8 6 col-0-tex                  0
+24650 32 7 3 col-sdw-0-tex              2
+24710 32 1 4  lit-tbl-tex               8
+24736 24 2 5 em-mask-tex                1
+24722 27 4 6 eff-tex                    6
+24638 56 2 7 ly-col-0-tex               3
+24664 30 3 9 norm-map-tex               5
+24680 48 8 9 sph-map-tex                7
 
 24596 -1 1
-24786 2 0 4 bln-const
-24770 67 3 1 flt-const
-24754 64 5 4 lig-const
-24826 65 2 5 wvp-const
-
+24786 2 0 4 bln-const                   1
+24770 67 3 1 flt-const                  2
+24754 64 5 4 lig-const                  4
+24826 65 2 5 wvp-const                  3
 
 body.bnsh_vsh
 
 20500 -1 3
-20572 2 0 5 in-norm
-20632 1 1 2 in-pos
-20658 0 2 4 in-map-1
-20706 1 3 4 i-blend-idx
-20518 3 5 1 i-blend-wt
+20572 2 0 5 in-norm                   1
+20632 1 1 2 in-pos                    0
+20658 0 2 4 in-map-1                  3
+20706 1 3 4 i-blend-idx              11
+20518 3 5 1 i-blend-wt               12
 
 20500 -1 2
-20504 4 0 1 out-mtx-row-0
-20668 0 3 6 out-mtx-row-1
-20584 1 4 5 out-mtx-row-2
-20558 2 1 4 out-norm
-20598 2 3 7 out-wld-pos
-20646 8 6 2 out-map-1
-20618 64 5 7 gl-pos
+20504 4 0 1 out-mtx-row-0            -1
+20668 0 3 6 out-mtx-row-1            -1
+20584 1 4 5 out-mtx-row-2            -1
+20558 2 1 4 out-norm                 -1
+20598 2 3 7 out-wld-pos              -1
+20646 8 6 2 out-map-1                -1
+20618 64 5 7 gl-pos                  -1
 
 20500 -1 1
-20690 0 2 1 wvp-const
-20534 2 0 2 join-mtx-vs
+20690 0 2 1 wvp-const                 0
+20534 2 0 2 join-mtx-vs               1
