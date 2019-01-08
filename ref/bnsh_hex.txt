@@ -655,7 +655,7 @@ body.bnsh_fsh
 24596 -1 1 reslut.color
 24600 4 0 1 out-color-0                 0
 
-24596 -1 1 textures
+24596 -1 1 textures buf14
 24696 3 0 5 amb-tex                     4
 24628 26 8 6 col-0-tex                  0
 24650 32 7 3 col-sdw-0-tex              2
@@ -666,17 +666,18 @@ body.bnsh_fsh
 24664 30 3 9 norm-map-tex               5
 24680 48 8 9 sph-map-tex                7
 
-24596 -1 1 
+24596 -1 1 buf
 24786 2 0 4 bln-const                   1
 24770 67 3 1 flt-const                  2
-24754 64 5 4 lig-const                  4
-24826 65 2 5 wvp-const                  3
+24754 72 3 2 lig-const                  4
+24826 64 5 4 v3-const                   3
+24802 65 2 5 wvp-const                  0
 
-buf0: 304 208 192 224 
+buf0: 304 208 192 224                  wvp-const
 buf1: 0 20 8 44 16 32 24 12 40 4 28 52 112 56 32 60 36 64 
 buf2: 20 16 4 12 8 0 156 64 60 48 32 56 52 44 84 72 88 80 40 92 100 96 160 28 76 68 24 36 104 108 112 116 124 60 128 120 132 144 136 140 152 148
 buf3: 80 48 16 128 144 112 96 64 160 0 32 176 192 224 208 240 
-buf4: 0                                   wvp-const
+buf4: 0                                  
 buf14: 0 16 24 40 32 48 8 56 64, texture buffer?
 
 body.bnsh_vsh
@@ -699,8 +700,8 @@ body.bnsh_vsh
 
 20500 -1 1
 20690 0 2 1 wvp-const                 0
-20534 2 0 2 joint-mtx-vs               1
+20534 2 0 2 joint-mtx-vs              1        bone-mtx
 
 buf0: 64 80 96 112 114 128 160 176
-buf1: ...
+buf1: ... bone-mtx
 
