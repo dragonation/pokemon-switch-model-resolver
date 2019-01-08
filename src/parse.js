@@ -1,5 +1,7 @@
 const gfbin = require("./gfbin.js");
 const gfpak = require("./gfpak.js");
+const bnsh = require("./bnsh.js");
+const bntx = require("./bntx.js");
 
 const fnv1a64 = require("./fnv1a64.js");
 
