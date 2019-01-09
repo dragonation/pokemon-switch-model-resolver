@@ -1,3 +1,50 @@
+var parseTree = function (reader) {
+
+    if (reader.readString(4) !== "_DIC") {
+        throw new Error("Invalid dictionary magic");
+    }
+
+    let result = {
+        "nodes": [],
+        "indices": {}
+    };
+
+    let nodes = reader.readUInt32();
+
+    let looper = 0;
+    while (looper <= nodes) {
+
+        let bits = reader.readInt32();
+        let left = reader.readUInt16();
+        let right = reader.readUInt16();
+
+        let nameReader = reader.snapshot(reader.readUInt32());
+        let name = nameReader.readString(nameReader.readUInt16());
+
+        let dataOffset = reader.readUInt32();
+
+        let node = {
+            "bits": bits,
+            "left": left,
+            "right": right,
+            "name": name,
+            "offset": dataOffset
+        };
+
+        result.nodes.push(node);
+
+        if (name) {
+            result.indices[name] = node;
+        }
+
+        ++looper;
+    }
+
+    return result;
+
+};
+
+
 var parse = function (reader) {
 
     var magic = reader.readString(8);
@@ -85,7 +132,7 @@ var parse = function (reader) {
 
     let codeOffset = reader.snapshot(reader.snapshot(result.offsets[0].offset).readUInt64()).skip(8, 0).readUInt64();
     let codeReader = reader.snapshot(codeOffset);
-    // interesting magic, btw the magic of machine data is 12345678
+    // interesting magic, btw the magic of machine code is 12345678, but no care
     if (codeReader.readHash32() !== "98761234") {
         throw new Error("Invalid code magic");
     }
@@ -99,31 +146,39 @@ var parse = function (reader) {
         // rest no care
     };
 
-    result.code.content = reader.snapshot(result.code.offset + codeOffset).readAutostring(result.code.length);
+    let sourceReader = reader.snapshot(result.code.offset + codeOffset);
+    result.code.content = sourceReader.readString(result.code.length);
 
-    @dump("---");
-    let dictReader = reader.snapshot(result.offsets[1].offset);
-    dictReader.readUInt64(); // ignore, 192, unknownOffset
-    let dictOffset = dictReader.readUInt64(); // 480
-    dictReader = reader.snapshot(reader.snapshot(dictOffset).readUInt64());
-    if (dictReader.offset === 0) {
-        reader.snapshot(0).dump();
-    }
-    // let dictReader = reader.snapshot(result.code.offset + codeOffset + result.code.length-32).dump(400);
-    // result.mapping = [
-    //     dictReader.readUInt64(),
-    //     dictReader.readUInt64(),
-    //     dictReader.readUInt64(),
-    //     dictReader.readUInt64(),
-    //     dictReader.readUInt64()
-    // ];
-    // @dump(result.mapping);
-
-    // let nextOffset = reader.snapshot(result.grsc.unknownOffset).skip(16).readUInt64();
-    // @dump(nextOffset);
-    // reader.snapshot(nextOffset).skip(8).readUInt64(64);
-
-    // scReader.dump(128);
+    let dictReader = sourceReader.skipPadding(8, 0);
+    let mapOffsets = [
+        dictReader.readUInt64(),
+        dictReader.readUInt64(),
+        dictReader.readUInt64(),
+        dictReader.readUInt64(),
+        dictReader.readUInt64() // always zero
+    ];
+    let indexOffsets = [
+        0,
+        dictReader.readUInt32(),
+        dictReader.readUInt32(),
+        dictReader.readUInt32(),
+        dictReader.readUInt32(),
+    ];
+    let baseOffset = dictReader.readUInt64();
+    result.maps = mapOffsets.map((offset, index) => {
+        if (offset) {
+            let tree = parseTree(reader.snapshot(offset));
+            let indexReader = reader.snapshot(baseOffset + indexOffsets[index] * 4);
+            let looper = 1;
+            while (looper < tree.nodes.length) {
+                tree.nodes[looper].index = indexReader.readInt32();
+                ++looper;
+            }
+            return tree;
+        } else {
+            return null;
+        }
+    });
 
     return result;
 

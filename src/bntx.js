@@ -12,9 +12,9 @@ var parseTree = function (reader) {
     let nodes = reader.readUInt32();
 
     let looper = 0;
-    while (looper <= result.nodes) {
+    while (looper <= nodes) {
 
-        let bits = reader.readUInt32();
+        let bits = reader.readInt32();
         let left = reader.readUInt16();
         let right = reader.readUInt16();
 
@@ -34,7 +34,7 @@ var parseTree = function (reader) {
         result.nodes.push(node);
 
         if (name) {
-            indices[name] = node;
+            result.indices[name] = node;
         }
 
         ++looper;
