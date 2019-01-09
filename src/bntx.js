@@ -79,12 +79,14 @@ var parseFormatUnit = function (unit) {
         default: { throw new Error("unknown format unit"); };
     }
 };
+// 0x1f01: 'BC6H_UF16',
+// 0x1f02: 'BC6H_SF16',
 
 var parseFormatType = function (type) {
     switch (type) {
         case 0x02: { return "r8"; };
         case 0x07: { return "r5g6b5"; };
-        case 0x09: { return "r8r8"; };
+        case 0x09: { return "r8g8"; };
         case 0x0a: { return "r16"; };
         case 0x0b: { return "r8g8b8a8"; };
         case 0x0f: { return "r11g11b10"; };
@@ -112,6 +114,49 @@ var parseFormatType = function (type) {
         case 0x3a: { return "astc12x12"; };
         default: { throw new Error("Unknown format type"); }
     }
+};
+
+var getPixelSize = function (type) {
+    switch (type) {
+        case "r8": { return 1; };
+        case "r5g6b5": { return 2; };
+        case "r8g8": { return 2; };
+        case "r16": { return 2; };
+        case "r8g8b8a8": { return 4; };
+        case "r11g11b10": { return 4; };
+        case "r32": { return 4; };
+        case "bc1": { return 8; };
+        case "bc2": { return 16; };
+        case "bc3": { return 16; };
+        case "bc4": { return 8; };
+        case "bc5": { return 16; };
+        case "bc6": { return 16; };
+        case "bc7": { return 16; };
+        default { return 16; };
+    }
+};
+
+var getTileSize = function (type) {
+    switch (type) {
+        case "bc1": { return [4, 4]; };
+        case "bc2": { return [4, 4]; };
+        case "bc3": { return [4, 4]; };
+        case "bc4": { return [4, 4]; };
+        case "bc5": { return [4, 4]; };
+        case "bc6": { return [4, 4]; };
+        case "bc7": { return [4, 4]; };
+        default: {
+            if (type.indexOf("astc") === 0) {
+                return type.slice(4).split("x").map((number) => parseInt(number));
+            } else {
+                return [1, 1];
+            }
+        }
+    }
+};
+
+var deswizzle = function (width, height, formatType, formatUnit, depth, tileMode, alignment, sizeLevel, data) {
+
 };
 
 var parse = function (reader) {
